@@ -2,7 +2,7 @@
 
 from sys import (argv, stdout)
 import csv
-from collections import namedtuple
+from collections import (namedtuple, defaultdict)
 from xml.sax import saxutils
 
 def main():
@@ -76,9 +76,17 @@ help\tDisplay this help""".format(freq_thold))
         out.writerows(sorted(evcs))
         return
     
+    class Plant(Record):
+        def __init__(self):
+            Record.__init__(self,
+                ca=None,
+                evcs=dict(),
+                quads=dict(),
+            )
+    plants = defaultdict(Plant)
+    
     CaPlant = namedtuple("CaPlant",
         "name, ex, common, family, fam_com, group, area, grid, note")
-    ca_plants = []
     with open(ca_file, newline="") as file:
         for plant in csv.reader(file):
             if plant[0].startswith("\x1A"):
@@ -91,12 +99,15 @@ help\tDisplay this help""".format(freq_thold))
             plant.family in ("Orchidaceae", "Loranthaceae")):
                 continue
             
-            ca_plants.append(plant)
-    
-    ca_plants.sort(key=FieldRef("name"))
+            plants[plant.name].ca = plant
     
     if freq_file is not None:
-        evc_list = {evc: dict() for evc in evcs}
+        DIV_FERN = "2"
+        DIV_MOSS = "5"
+        FAM_MISTLETOE = "124"
+        FAM_ORCHID = "124"
+        
+        max_freq = dict()
         
         with open(freq_file, newline="") as file:
             for plant in csv.DictReader(file):
@@ -104,28 +115,50 @@ help\tDisplay this help""".format(freq_thold))
                     evc = plant[key]
                     if evc not in evcs:
                         continue
-                    plant["Frequency"] = int(plant["Frequency"])
-                    evc_list[evc][plant["NAME"]] = plant
-        
-        max_freq = {evc:
-            max(plant["Frequency"] for plant in evc_list[evc].values())
-                for evc in evcs}
+                    
+                    freq = int(plant["Frequency"])
+                    try:
+                        max = max_freq[evc]
+                    except LookupError:
+                        max_freq[evc] = freq
+                    else:
+                        if freq > max:
+                            max_freq[evc] = freq
+                    
+                    if (plant["ORIGIN"] == "*" or
+                    plant["DIVISION"] in (DIV_FERN, DIV_MOSS) or
+                    plant["FAMILYNO"] in (FAM_ORCHID, FAM_MISTLETOE)):
+                        continue
+                    
+                    plant["Frequency"] = freq
+                    plants[plant["NAME"]].evcs[evc] = plant
     
     ViridansPlant = namedtuple("ViridansPlant",
         "arots, vrots, origin, name, common")
-    quad_plants = list()
     for quad_file in quads:
-        plants = dict()
         with open(quad_file, newline="") as file:
             file = csv.reader(file)
             next(file)
+            group = None
+            family = None
             for row in file:
-                if (row == ("Scientific Name", "Common Name") or
-                all(not field for field in row[2:5])):
+                if row[1] == "t1":
+                    (group, _, *_) = row
+                    family = None
                     continue
+                elif row[1] == "t2":
+                    (family, _, *_) = row
+                    continue
+                
+                if (group == "6: Ferns and Fern-like Plants" or
+                family in ("Orchidaceae", "Loranthaceae")):
+                    continue
+                
                 plant = ViridansPlant._make(row)
-                plants[plant.name] = plant
-        quad_plants.append(plants)
+                if plant.origin == "*":
+                    continue
+                
+                plants[plant.name].quads[quad_file] = plant
     
     print("<html><body><table>")
     print("<tr><th>name</th><th>ex</th><th>area</th><th>grid</th>")
@@ -133,32 +166,39 @@ help\tDisplay this help""".format(freq_thold))
     print_tagged("th", quads)
     print("</tr>")
     
-    for plant in ca_plants:
-        plant_area = "".join(a for a in plant.area if a in area)
+    for name in sorted(plants.keys()):
+        plant = plants[name]
+        
+        if plant.ca is None:
+            plant_ex = ""
+            plant_area = ""
+            plant_grid = ""
+        else:
+            plant_ex = plant.ca.ex
+            plant_area = "".join(a for a in plant.ca.area if a in area)
+            plant_grid = "{:03o}".format(int(plant.ca.grid, 8) & grid)
         
         rel = list()
-        under_thold = True
+        thold_met = False
         for evc in evcs:
-            plants = evc_list[evc]
             try:
-                evc_plant = plants[plant.name]
+                evc_plant = plant.evcs[evc]
             except LookupError:
                 rel.append("")
             else:
                 freq = evc_plant["Frequency"] / max_freq[evc]
-                under_thold = under_thold and freq < freq_thold
+                thold_met = thold_met or freq >= freq_thold
                 rel.append("{:.2f}".format(freq))
         
-        inquads = tuple("Y" if plant.name in list else ""
-            for list in quad_plants)
+        inquads = tuple(quad in plant.quads for quad in quads)
         
-        if (not plant_area and under_thold and not any(inquads)):
+        if not plant_area and not thold_met and not any(inquads):
             continue
         
         print("<tr>")
-        plant_grid = "{:03o}".format(int(plant.grid, 8) & grid)
-        print_tagged("td", (plant.name, plant.ex, plant_area, plant_grid) +
-            tuple(rel) + inquads)
+        print_tagged("td", (name, plant_ex, plant_area, plant_grid))
+        print_tagged("td", rel)
+        print_tagged("td", ("Y" if q else "" for q in inquads))
         print("</tr>")
     
     print("</table></body></html>")
@@ -167,11 +207,9 @@ def print_tagged(tag, list):
     for text in list:
         print("<{tag}>{}</{tag}>".format(saxutils.escape(text), tag=tag))
 
-class FieldRef(object):
-    def __init__(self, name):
-        self.name = name
-    def __call__(self, obj):
-        return getattr(obj, self.name)
+class Record(object):
+    def __init__(self, *args, **kw):
+        self.__dict__.update(*args, **kw)
 
 if __name__ == "__main__":
     main()
