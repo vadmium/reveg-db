@@ -1,0 +1,180 @@
+#! /usr/bin/env python3
+
+from sys import (argv, stdout)
+import csv
+from collections import namedtuple
+from xml.sax import saxutils
+
+def main():
+    help = False
+    grid = 0o000
+    area = []
+    plants = []
+    freq_thold = 0.3
+    ca_file = None
+    freq_file = None
+    evcs = []
+    quads = []
+    
+    i = iter(argv)
+    next(i)
+    while True:
+        try:
+            arg = next(i)
+        except StopIteration:
+            break
+        
+        lower = arg.lower()
+        if lower in {"help", "-h", "--help", "-?", "?"}:
+            help = True
+        elif lower == "grid":
+            grid |= int(next(i), 8)
+        elif lower == "area":
+            area.extend(next(i))
+        elif lower == "ca":
+            ca_file = next(i)
+        elif lower == "freqs":
+            freq_file = next(i)
+        elif lower == "evc":
+            evcs.append(next(i))
+        elif lower == "quad":
+            quads.append(next(i))
+        else:
+            raise SystemExit('''\
+Bad command line argument: {}
+Try "{} help"'''.format(arg, argv[0]))
+    
+    if help or ca_file is None and freq_file is None:
+        print("""\
+Options:
+ca <PLANT_CA.TXT>
+\tCastlemaine plant list CSV file. Produce combined list based off this.
+freqs <GoldfieldsBrgnlEVCSppFreq.xls.csv>
+\tEVC frequency plant list CSV file. Produce list of EVCs if no
+\tCastlemaine plant list also given.
+grid <octal code>
+\tOctal (binary) code of 10-minute grid references to highlight
+area <alphanumeric sequence>
+\tCastlemaine plant list area codes to include
+evc <name or number>
+\tInclude plants whose relative frequencies in EVC exceed threshold
+\t({}). Use "freqs" option alone to list EVCs.
+quad <Viridans CSV file>
+\tInclude plants from Viridans quadrat
+help\tDisplay this help""".format(freq_thold))
+        return
+    
+    evc_keys = ("EVC_DESC", "EVC")
+    
+    if ca_file is None:
+        with open(freq_file, newline="") as file:
+            evcs = set(tuple(row[key] for key in evc_keys)
+                for row in csv.DictReader(file))
+        
+        out = csv.writer(stdout)
+        out.writerow(evc_keys)
+        out.writerows(sorted(evcs))
+        return
+    
+    CaPlant = namedtuple("CaPlant",
+        "name, ex, common, family, fam_com, group, area, grid, note")
+    ca_plants = []
+    with open(ca_file, newline="") as file:
+        for plant in csv.reader(file):
+            if plant[0].startswith("\x1A"):
+                break
+            
+            plant = CaPlant._make(plant)
+            
+            if (not plant.grid or plant.ex in tuple("*+") or
+            plant.group == "f" or
+            plant.family in ("Orchidaceae", "Loranthaceae")):
+                continue
+            
+            ca_plants.append(plant)
+    
+    ca_plants.sort(key=FieldRef("name"))
+    
+    if freq_file is not None:
+        evc_list = {evc: dict() for evc in evcs}
+        
+        with open(freq_file, newline="") as file:
+            for plant in csv.DictReader(file):
+                for key in evc_keys:
+                    evc = plant[key]
+                    if evc not in evcs:
+                        continue
+                    plant["Frequency"] = int(plant["Frequency"])
+                    evc_list[evc][plant["NAME"]] = plant
+        
+        max_freq = {evc:
+            max(plant["Frequency"] for plant in evc_list[evc].values())
+                for evc in evcs}
+    
+    ViridansPlant = namedtuple("ViridansPlant",
+        "arots, vrots, origin, name, common")
+    quad_plants = list()
+    for quad_file in quads:
+        plants = dict()
+        with open(quad_file, newline="") as file:
+            file = csv.reader(file)
+            next(file)
+            for row in file:
+                if (row == ("Scientific Name", "Common Name") or
+                all(not field for field in row[2:5])):
+                    continue
+                plant = ViridansPlant._make(row)
+                plants[plant.name] = plant
+        quad_plants.append(plants)
+    
+    print("<html><body><table>")
+    print("<tr><th>name</th><th>ex</th><th>area</th><th>grid</th>")
+    print_tagged("th", evcs)
+    print_tagged("th", quads)
+    print("</tr>")
+    
+    for plant in ca_plants:
+        plant_area = "".join(a for a in plant.area if a in area)
+        
+        rel = list()
+        under_thold = True
+        for evc in evcs:
+            plants = evc_list[evc]
+            try:
+                evc_plant = plants[plant.name]
+            except LookupError:
+                rel.append("")
+            else:
+                freq = evc_plant["Frequency"] / max_freq[evc]
+                under_thold = under_thold and freq >= freq_thold
+                rel.append("{:.2f}".format(freq))
+        
+        inquads = tuple("Y" if plant.name in list else ""
+            for list in quad_plants)
+        
+        if (not plant_area and under_thold and not any(inquads)):
+            continue
+        
+        print("<tr>")
+        plant_grid = "{:03o}".format(int(plant.grid, 8) & grid)
+        print_tagged("td", (plant.name, plant.ex, plant_area, plant_grid) +
+            tuple(rel) + inquads)
+        print("</tr>")
+    
+    print("</table></body></html>")
+
+def print_tagged(tag, list):
+    for text in list:
+        print("<{tag}>{}</{tag}>".format(saxutils.escape(text), tag=tag))
+
+class FieldRef(object):
+    def __init__(self, name):
+        self.name = name
+    def __call__(self, obj):
+        return getattr(obj, self.name)
+
+if __name__ == "__main__":
+    main()
+
+#Grid alias incl cmd line
+#Fuzzy text matching
