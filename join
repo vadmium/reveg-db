@@ -146,7 +146,7 @@ help\tDisplay this help""".format(freq_thold))
                 rel.append("")
             else:
                 freq = evc_plant["Frequency"] / max_freq[evc]
-                under_thold = under_thold and freq >= freq_thold
+                under_thold = under_thold and freq < freq_thold
                 rel.append("{:.2f}".format(freq))
         
         inquads = tuple("Y" if plant.name in list else ""
