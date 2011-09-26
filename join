@@ -39,6 +39,8 @@ def main():
             evcs.append(next(i))
         elif lower == "quad":
             quads.append(next(i))
+        elif lower == "thold":
+            freq_thold = float(next(i))
         else:
             raise SystemExit('''\
 Bad command line argument: {}
@@ -57,10 +59,12 @@ grid <octal code>
 area <alphanumeric sequence>
 \tCastlemaine plant list area codes to include
 evc <name or number>
-\tInclude plants whose relative frequencies in EVC exceed threshold
-\t({}). Use "freqs" option alone to list EVCs.
+\tInclude plants whose relative frequencies in EVC exceed threshold. Use
+\t"freqs" option alone to list EVCs.
 quad <Viridans CSV file>
 \tInclude plants from Viridans quadrat
+thold <threshold>
+\tEVC frequency threshold (default: {})
 help\tDisplay this help""".format(freq_thold))
         return
     

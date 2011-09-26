@@ -1,7 +1,7 @@
-@echo off
 "%SystemDrive%\Python32\python.exe" join ^
 ca "%USERPROFILE%\My Documents\plant lists\Cmn plantlist\PLANT_ca.txt" ^
 freqs "%USERPROFILE%\My Documents\evcs\GoldfieldsBrgnlEVCSppFreq.xls.csv" ^
+thold 0.3 ^
 grid 020 ^
 area AX7 ^
 evc "Grassy Woodland" ^
