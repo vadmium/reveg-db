@@ -1,5 +1,9 @@
 #! /usr/bin/env python3
 
+#The incantation for making a Python script executable under WinNT is to give the file an extension of .cmd and add the following as the first line:
+
+#@setlocal enableextensions & python -x %~f0 %* & goto :EOF
+
 from sys import (argv, stdout)
 import csv
 from collections import (namedtuple, defaultdict)
@@ -220,11 +224,11 @@ if __name__ == "__main__":
 
 #Grid alias incl cmd line
 #Fuzzy text matching
-#Some plants are abbreviated, minor problems worked around; eg:
+#@Ern: Some plants are abbreviated, minor problems worked around; eg:
 # Lomandra longifolia ssp longifol.
 # Dianella aff longifolia 'Benambra
 # Lomandra multiflora ssp multiflor
 #How to handle origin, exotic, AROTS, VROTS merging or multiple columns
 #How to do Windows python scripts so they are easy to run
 #Case-insensitive evc names
-#Explicit option to list evc
+#Explicit option to list evcs
