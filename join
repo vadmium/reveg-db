@@ -45,6 +45,8 @@ def main():
             quads.append(next(i))
         elif lower == "thold":
             freq_thold = float(next(i))
+        elif lower == "grid-alias":
+            grid_alias = next(i)
         else:
             raise SystemExit('''\
 Bad command line argument: {}
@@ -69,6 +71,9 @@ quad <Viridans CSV file>
 \tInclude plants from Viridans quadrat
 thold <threshold>
 \tEVC frequency threshold (default: {})
+grid-alias <CSV file>
+\tMapping from octal (binary) codes to grid names and aliases (default:
+\t./grids.csv)
 help\tDisplay this help""".format(freq_thold))
         return
     
@@ -222,7 +227,6 @@ class Record(object):
 if __name__ == "__main__":
     main()
 
-#Grid alias incl cmd line
 #Fuzzy text matching
 #@Ern: Some plants are abbreviated, minor problems worked around; eg:
 # Lomandra longifolia ssp longifol.
