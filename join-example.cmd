@@ -1,3 +1,4 @@
+@echo off
 "%SystemDrive%\Python32\python.exe" join ^
 ca "%USERPROFILE%\My Documents\plant lists\Cmn plantlist\PLANT_ca.txt" ^
 freqs "%USERPROFILE%\My Documents\evcs\GoldfieldsBrgnlEVCSppFreq.xls.csv" ^
