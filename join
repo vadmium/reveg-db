@@ -4,6 +4,17 @@
 
 #@setlocal enableextensions & python -x %~f0 %* & goto :EOF
 
+ex "output"
+subst archane hash bang
+grids multiple
+explain grid: grid code means anything in corresponding single grid area, independent of whether it is also in any other grid areas
+multiple grid options means produce single list involving anything in any of the provided grids
+order of area codes do not match; can have multiple area options which is equivalent to specifying a string of area codes as one option
+
+cmd shebang needs quotes for "%~f0"
+
+what if evc not found?
+
 from sys import (argv, stdout)
 import csv
 from collections import (namedtuple, defaultdict)
