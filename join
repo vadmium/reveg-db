@@ -3,17 +3,7 @@
 #The incantation for making a Python script executable under WinNT is to give the file an extension of .cmd and add the following as the first line:
 
 #@setlocal enableextensions & python -x %~f0 %* & goto :EOF
-
-ex "output"
-subst archane hash bang
-grids multiple
-explain grid: grid code means anything in corresponding single grid area, independent of whether it is also in any other grid areas
-multiple grid options means produce single list involving anything in any of the provided grids
-order of area codes do not match; can have multiple area options which is equivalent to specifying a string of area codes as one option
-
-cmd shebang needs quotes for "%~f0"
-
-what if evc not found?
+#cmd shebang needs quotes for "%~f0"
 
 from sys import (argv, stdout)
 import csv
@@ -63,21 +53,38 @@ Try "{} help"'''.format(arg, argv[0]))
     
     if help or ca_file is None and freq_file is None:
         print("""\
+join ca ... [area ...] [freqs ... evc ...] [quad ...] [options] > output.html
+\tIncludes only those plants selected by the "area", "evc" and "quad"
+\toptions. Ignores plants with * and + origin, and ferns, orchids and
+\tmistletoes.
+join freqs ...
+\tLists EVCs found
+
 Options:
 ca <PLANT_CA.TXT>
 \tCastlemaine plant list CSV file. Produce combined list based off this.
 freqs <GoldfieldsBrgnlEVCSppFreq.xls.csv>
-\tEVC frequency plant list CSV file. Produce list of EVCs if no
-\tCastlemaine plant list also given.
+\tEVC frequency plant list CSV file
 grid <octal code>
-\tOctal (binary) code of 10-minute grid references to highlight
+\tOctal (binary) mask code of 10-minute grid references to highlight. The
+\tmatching grid code(s) are indicated in the list, but this does not
+\taffect whether a plant is selected in the list. A single grid code
+\thighlights plants in the corresponding grid area, independent of whether
+\tthey are also in any other grid areas. Multiple grid options means to
+\thighlight which of the provided grids a plants is from. 
 area <alphanumeric sequence>
-\tCastlemaine plant list area codes to include
+\tCastlemaine plant list area codes to include. More than one may be
+\tspecified as a string of codes or multiple options. The order does not
+\tmatter. The matching codes are indicated in the list.
 evc <name or number>
 \tInclude plants whose relative frequencies in EVC exceed threshold. Use
-\t"freqs" option alone to list EVCs.
+\t"freqs" option alone to list EVCs. If the EVC does not exist (or is
+\tspelt wrong), the only indication is the corresponding output column is
+\tnot populated.
 quad <Viridans CSV file>
-\tInclude plants from Viridans quadrat
+\tInclude plants from Viridans quadrat. The "systematic format" is
+\tprobably better than the alphabetical because some types of plants are
+\tthen easily identified by the program and ignored.
 thold <threshold>
 \tEVC frequency threshold (default: {})
 help\tDisplay this help""".format(freq_thold))
@@ -243,3 +250,4 @@ if __name__ == "__main__":
 #How to do Windows python scripts so they are easy to run
 #Case-insensitive evc names
 #Explicit option to list evcs
+#what if evc not found?
