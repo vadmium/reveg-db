@@ -51,7 +51,7 @@ def main():
 Bad command line argument: {}
 Try "{} help"'''.format(arg, argv[0]))
     
-    if help or ca_file is None and freq_file is None:
+    if help or (ca_file is None and freq_file is None and not quads):
         print("""\
 join ca ... [area ...] [freqs ... evc ...] [quad ...] [options] > output.html
 \tIncludes only those plants selected by the "area", "evc" and "quad"
@@ -90,7 +90,7 @@ thold <threshold>
 help\tDisplay this help""".format(freq_thold))
         return
     
-    if ca_file is None:
+    if freq_file is not None and not evcs:
         list_evcs(freq_file)
         return
     
@@ -103,21 +103,22 @@ help\tDisplay this help""".format(freq_thold))
             )
     plants = defaultdict(Plant)
     
-    CaPlant = namedtuple("CaPlant",
-        "name, ex, common, family, fam_com, group, area, grid, note")
-    with open(ca_file, newline="") as file:
-        for plant in csv.reader(file):
-            if plant[0].startswith("\x1A"):
-                break
-            
-            plant = CaPlant._make(plant)
-            
-            if (not plant.grid or plant.ex in tuple("*+") or
-            plant.group == "f" or
-            plant.family in ("Orchidaceae", "Loranthaceae")):
-                continue
-            
-            plants[plant.name].ca = plant
+    if ca_file is not None:
+        CaPlant = namedtuple("CaPlant",
+            "name, ex, common, family, fam_com, group, area, grid, note")
+        with open(ca_file, newline="") as file:
+            for plant in csv.reader(file):
+                if plant[0].startswith("\x1A"):
+                    break
+                
+                plant = CaPlant._make(plant)
+                
+                if (not plant.grid or plant.ex in tuple("*+") or
+                plant.group == "f" or
+                plant.family in ("Orchidaceae", "Loranthaceae")):
+                    continue
+                
+                plants[plant.name].ca = plant
     
     if freq_file is not None:
         DIV_FERN = "2"
