@@ -9,6 +9,13 @@ from sys import (argv, stdout)
 import csv
 from collections import (namedtuple, defaultdict)
 from xml.sax import saxutils
+from tkinter import Tk
+from tkinter.ttk import (Button, Entry, Frame, Label)
+import tkinter
+from tkinter.filedialog import askopenfilename
+from functools import partial
+from tkinter import (StringVar, DoubleVar)
+from os.path import splitext
 
 def main():
     FREQ_DEFAULT = "GoldfieldsBrgnlEVCSppFreq.xls.csv"
@@ -54,7 +61,7 @@ def main():
 Bad command line argument: {}
 Try "{} help"'''.format(arg, argv[0]))
     
-    if help or (ca_file is None and freq_file is None and not quads):
+    if help:
         print("""\
 join ca ... [area ...] [freqs ... evc ...] [quad ...] [options] > output.html
 \tIncludes only those plants selected by the "area", "evc" and "quad"
@@ -96,6 +103,33 @@ help\tDisplay this help""".format(**locals()))
     if freq_file is not None and not evcs:
         list_evcs(freq_file)
         return
+    
+    if ca_file is None and freq_file is None and not quads:
+        root = Tk()
+        root.title("Reveg DB")
+        root.columnconfigure(1, weight=1)
+        
+        ca_file = add_file(root, 0, "Castlemaine plants file", CA_DEFAULT)
+        grid = StringVar(value="{:03o}".format(grid))
+        add_field(root, 1, "Highlight grid sections",
+            Entry(root, textvariable=grid))
+        add_field(root, 2, "Select areas", Entry(root))
+        freq_file = add_file(root, 3, "EVC frequencies file", FREQ_DEFAULT)
+        add_field(root, 4, "Select EVCs", Label(root, text="(EVCs name, number)"))
+        freq_thold = DoubleVar(value=freq_thold)
+        add_field(root, 5, "EVC frequency threshold",
+            Entry(root, textvariable=freq_thold))
+        add_field(root, 6, "Select Viridans quadrat", Label(root, text="(quadrats file, name)"))
+        
+        Button(root, text="Produce list . . .",
+            command=partial(join, ca_file, None)).grid(columnspan=2)
+        root.bind("<Return>", partial(join, ca_file))
+        
+        root.mainloop()
+        return
+
+def join(ca_file, _):
+    ca_file = ca_file.get()
     
     class Plant(Record):
         def __init__(self):
@@ -232,6 +266,8 @@ def print_tagged(tag, list):
 EVC_KEYS = ("EVC_DESC", "EVC")
 
 def list_evcs(freq_file):
+    freq_file = freq_file.get()
+    
     with open(freq_file, newline="") as file:
         evcs = set(tuple(row[key] for key in EVC_KEYS)
             for row in csv.DictReader(file))
@@ -240,6 +276,33 @@ def list_evcs(freq_file):
     out.writerow(EVC_KEYS)
     out.writerows(sorted(evcs))
     return
+
+def add_file(window, row, label, default):
+    field = Frame(window)
+    file = StringVar(value=default)
+    Entry(field, textvariable=file).pack(
+        side=tkinter.LEFT, expand=True, fill=tkinter.X)
+    Button(field, text="Clear", command=partial(file.set, "")).pack(
+        side=tkinter.LEFT)
+    Button(field, text="Set . . .", command=partial(choose_file, file,
+        title='Open "{default}"'.format(**locals()),
+        defaultextension=splitext(default)[1],
+        #parent=field,
+    )).pack(side=tkinter.LEFT)
+    add_field(window, row, label, field)
+    return file
+
+def choose_file(var, *args, **kw):
+    # How to avoid this disabling the parent window?
+    file = askopenfilename(*args, **kw)
+    if not file:
+        return
+    var.set(file)
+
+def add_field(window, row, label, widget):
+    Label(window, text=label).grid(
+        row=row, column=0, sticky=tkinter.E + tkinter.W)
+    widget.grid(row=row, column=1, sticky=tkinter.E + tkinter.W)
 
 class Record(object):
     def __init__(self, *args, **kw):
