@@ -90,16 +90,8 @@ thold <threshold>
 help\tDisplay this help""".format(freq_thold))
         return
     
-    evc_keys = ("EVC_DESC", "EVC")
-    
     if ca_file is None:
-        with open(freq_file, newline="") as file:
-            evcs = set(tuple(row[key] for key in evc_keys)
-                for row in csv.DictReader(file))
-        
-        out = csv.writer(stdout)
-        out.writerow(evc_keys)
-        out.writerows(sorted(evcs))
+        list_evcs(freq_file)
         return
     
     class Plant(Record):
@@ -137,7 +129,7 @@ help\tDisplay this help""".format(freq_thold))
         
         with open(freq_file, newline="") as file:
             for plant in csv.DictReader(file):
-                for key in evc_keys:
+                for key in EVC_KEYS:
                     evc = plant[key]
                     if evc not in evcs:
                         continue
@@ -232,6 +224,18 @@ help\tDisplay this help""".format(freq_thold))
 def print_tagged(tag, list):
     for text in list:
         print("<{tag}>{}</{tag}>".format(saxutils.escape(text), tag=tag))
+
+EVC_KEYS = ("EVC_DESC", "EVC")
+
+def list_evcs(freq_file):
+    with open(freq_file, newline="") as file:
+        evcs = set(tuple(row[key] for key in EVC_KEYS)
+            for row in csv.DictReader(file))
+    
+    out = csv.writer(stdout)
+    out.writerow(EVC_KEYS)
+    out.writerows(sorted(evcs))
+    return
 
 class Record(object):
     def __init__(self, *args, **kw):
