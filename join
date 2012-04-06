@@ -11,6 +11,9 @@ from collections import (namedtuple, defaultdict)
 from xml.sax import saxutils
 
 def main():
+    FREQ_DEFAULT = "GoldfieldsBrgnlEVCSppFreq.xls.csv"
+    CA_DEFAULT = "PLANT_CA.TXT"
+    
     help = False
     grid = 0o000
     area = []
@@ -61,9 +64,9 @@ join freqs ...
 \tLists EVCs found
 
 Options:
-ca <PLANT_CA.TXT>
+ca <{CA_DEFAULT}>
 \tCastlemaine plant list CSV file. Produce combined list based off this.
-freqs <GoldfieldsBrgnlEVCSppFreq.xls.csv>
+freqs <{FREQ_DEFAULT}>
 \tEVC frequency plant list CSV file
 grid <octal code>
 \tOctal (binary) mask code of 10-minute grid references to highlight. The
@@ -86,8 +89,8 @@ quad <Viridans CSV file>
 \tprobably better than the alphabetical because some types of plants are
 \tthen easily identified by the program and ignored.
 thold <threshold>
-\tEVC frequency threshold (default: {})
-help\tDisplay this help""".format(freq_thold))
+\tEVC frequency threshold (default: {freq_thold})
+help\tDisplay this help""".format(**locals()))
         return
     
     if freq_file is not None and not evcs:
