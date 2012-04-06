@@ -179,20 +179,24 @@ help\tDisplay this help""".format(freq_thold))
                 
                 plants[plant.name].quads[quad_file] = plant
     
-    print("<html><body><table>")
-    print("<tr><th>name</th><th>ex</th><th>area</th><th>grid</th>")
+    print("""\
+<html><body><table>
+  <tr>
+    <th>name</th><th>common</th><th>ex</th><th>area</th><th>grid</th>""")
     print_tagged("th", evcs)
     print_tagged("th", quads)
-    print("</tr>")
+    print("""  </tr>""")
     
     for name in sorted(plants.keys()):
         plant = plants[name]
         
         if plant.ca is None:
+            plant_common = ""
             plant_ex = ""
             plant_area = ""
             plant_grid = ""
         else:
+            plant_common = plant.ca.common
             plant_ex = plant.ca.ex
             plant_area = "".join(a for a in plant.ca.area if a in area)
             plant_grid = "{:03o}".format(int(plant.ca.grid, 8) & grid)
@@ -214,13 +218,14 @@ help\tDisplay this help""".format(freq_thold))
         if not plant_area and not thold_met and not any(inquads):
             continue
         
-        print("<tr>")
-        print_tagged("td", (name, plant_ex, plant_area, plant_grid))
+        print("""  <tr>""")
+        print_tagged("td",
+            (name, plant_common, plant_ex, plant_area, plant_grid))
         print_tagged("td", rel)
         print_tagged("td", ("Y" if q else "" for q in inquads))
-        print("</tr>")
+        print("""  </tr>""")
     
-    print("</table></body></html>")
+    print("""</table></body></html>""")
 
 def print_tagged(tag, list):
     for text in list:
