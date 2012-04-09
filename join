@@ -16,6 +16,7 @@ from tkinter.filedialog import askopenfilename
 from functools import partial
 from tkinter import (StringVar, DoubleVar)
 from os.path import splitext
+from lib.tk import Form
 
 def main():
     FREQ_DEFAULT = "GoldfieldsBrgnlEVCSppFreq.xls.csv"
@@ -107,19 +108,19 @@ help\tDisplay this help""".format(**locals()))
     if ca_file is None and freq_file is None and not quads:
         root = Tk()
         root.title("Reveg DB")
-        root.columnconfigure(1, weight=1)
+        form = Form(root)
         
-        ca_file = add_file(root, 0, "Castlemaine plants file", CA_DEFAULT)
+        ca_file = add_file(form, CA_DEFAULT, text="Castlemaine plants file")
         grid = StringVar(value="{:03o}".format(grid))
-        add_field(root, 1, "Highlight grid sections",
-            Entry(root, textvariable=grid))
-        add_field(root, 2, "Select areas", Entry(root))
-        freq_file = add_file(root, 3, "EVC frequencies file", FREQ_DEFAULT)
-        add_field(root, 4, "Select EVCs", Label(root, text="(EVCs name, number)"))
+        form.add_field(Entry(root, textvariable=grid),
+            text="Highlight grid sections")
+        form.add_field(Entry(root), text="Select areas")
+        freq_file = add_file(form, FREQ_DEFAULT, text="EVC frequencies file")
+        form.add_field(Label(root, text="(EVCs name, number)"), text="Select EVCs")
         freq_thold = DoubleVar(value=freq_thold)
-        add_field(root, 5, "EVC frequency threshold",
-            Entry(root, textvariable=freq_thold))
-        add_field(root, 6, "Select Viridans quadrat", Label(root, text="(quadrats file, name)"))
+        form.add_field(Entry(root, textvariable=freq_thold),
+            text="EVC frequency threshold")
+        form.add_field(Label(root, text="(quadrats file, name)"), text="Select Viridans quadrat")
         
         Button(root, text="Produce list . . .",
             command=partial(join, ca_file, None)).grid(columnspan=2)
@@ -277,8 +278,8 @@ def list_evcs(freq_file):
     out.writerows(sorted(evcs))
     return
 
-def add_file(window, row, label, default):
-    field = Frame(window)
+def add_file(form, default, **kw):
+    field = Frame(form.master)
     file = StringVar(value=default)
     Entry(field, textvariable=file).pack(
         side=tkinter.LEFT, expand=True, fill=tkinter.X)
@@ -289,7 +290,7 @@ def add_file(window, row, label, default):
         defaultextension=splitext(default)[1],
         #parent=field,
     )).pack(side=tkinter.LEFT)
-    add_field(window, row, label, field)
+    form.add_field(field, **kw)
     return file
 
 def choose_file(var, *args, **kw):
@@ -298,11 +299,6 @@ def choose_file(var, *args, **kw):
     if not file:
         return
     var.set(file)
-
-def add_field(window, row, label, widget):
-    Label(window, text=label).grid(
-        row=row, column=0, sticky=tkinter.E + tkinter.W)
-    widget.grid(row=row, column=1, sticky=tkinter.E + tkinter.W)
 
 class Record(object):
     def __init__(self, *args, **kw):
