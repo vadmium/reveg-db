@@ -10,7 +10,7 @@ import csv
 from collections import (namedtuple, defaultdict)
 from xml.sax import saxutils
 from tkinter.tix import Tk
-from tkinter.ttk import (Button, Entry, Frame, Label)
+from tkinter.ttk import (Button, Entry, Frame, Label, LabelFrame)
 import tkinter
 from functools import partial
 from tkinter import (StringVar, DoubleVar)
@@ -107,22 +107,34 @@ help\tDisplay this help""".format(**locals()))
     if ca_file is None and freq_file is None and not quads:
         root = Tk()
         root.title("Reveg DB")
-        form = Form(root)
+        root.columnconfigure(0, weight=1)
         
-        ca_file = add_file(form, CA_DEFAULT, text="Castlemaine plants file")
+        frame = LabelFrame(root, text="Castlemaine plant list")
+        frame.grid(sticky=tkinter.EW)
+        form = Form(frame)
+        ca_file = add_file(form, CA_DEFAULT, text="Source file")
+        
         grid = StringVar(value="{:03o}".format(grid))
-        form.add_field(Entry(root, textvariable=grid),
+        form.add_field(Entry(frame, textvariable=grid),
             text="Highlight grid sections")
-        form.add_field(Entry(root), text="Select areas")
-        freq_file = add_file(form, FREQ_DEFAULT, text="EVC frequencies file")
-        form.add_field(Label(root, text="(EVCs name, number)"), text="Select EVCs")
+        form.add_field(Entry(frame), text="Select areas")
+        
+        frame = LabelFrame(root, text="EVC frequencies")
+        frame.grid(sticky=tkinter.EW)
+        form = Form(frame)
+        freq_file = add_file(form, FREQ_DEFAULT, text="Source file")
+        form.add_field(Label(frame, text="(EVCs name, number)"), text="Select EVCs")
         freq_thold = DoubleVar(value=freq_thold)
-        form.add_field(Entry(root, textvariable=freq_thold),
-            text="EVC frequency threshold")
-        form.add_field(Label(root, text="(quadrats file, name)"), text="Select Viridans quadrat")
+        form.add_field(Entry(frame, textvariable=freq_thold),
+            text="Frequency threshold")
+        
+        frame = LabelFrame(root, text="Viridans quadrats")
+        frame.grid(sticky=tkinter.EW)
+        form = Form(frame)
+        form.add_field(Label(frame, text="(quadrats file, name)"), text="Select Viridans quadrat")
         
         Button(root, text="Produce list . . .",
-            command=partial(join, ca_file, None)).grid(columnspan=2)
+            command=partial(join, ca_file, None)).grid()
         root.bind("<Return>", partial(join, ca_file))
         
         root.mainloop()
