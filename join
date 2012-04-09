@@ -145,7 +145,6 @@ class Ui(object):
         button = Button(self.root, text="Produce list . . .",
             command=self.join)
         button.grid(columnspan=2)
-        self.root.bind("<Return>", self.join)
         
         self.root.mainloop()
     
@@ -573,7 +572,7 @@ if __name__ == "__main__":
     main()
 
 #Grid alias incl cmd line
-#Fuzzy text matching
+#Fuzzy text matching; full stops are not significant: var. = var; prefer without
 #@Ern: Some plants are abbreviated, minor problems worked around; eg:
 # Lomandra longifolia ssp longifol.
 # Dianella aff longifolia 'Benambra
