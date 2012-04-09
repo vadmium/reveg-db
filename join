@@ -9,13 +9,12 @@ from sys import (argv, stdout)
 import csv
 from collections import (namedtuple, defaultdict)
 from xml.sax import saxutils
-from tkinter import Tk
+from tkinter.tix import Tk
 from tkinter.ttk import (Button, Entry, Frame, Label)
 import tkinter
-from tkinter.filedialog import askopenfilename
 from functools import partial
 from tkinter import (StringVar, DoubleVar)
-from os.path import splitext
+from tkinter.tix import FileEntry
 from lib.tk import Form
 
 def main():
@@ -281,24 +280,12 @@ def list_evcs(freq_file):
 def add_file(form, default, **kw):
     field = Frame(form.master)
     file = StringVar(value=default)
-    Entry(field, textvariable=file).pack(
+    FileEntry(field, dialogtype="tk_getOpenFile", variable=file).pack(
         side=tkinter.LEFT, expand=True, fill=tkinter.X)
     Button(field, text="Clear", command=partial(file.set, "")).pack(
         side=tkinter.LEFT)
-    Button(field, text="Set . . .", command=partial(choose_file, file,
-        title='Open "{default}"'.format(**locals()),
-        defaultextension=splitext(default)[1],
-        #parent=field,
-    )).pack(side=tkinter.LEFT)
     form.add_field(field, **kw)
     return file
-
-def choose_file(var, *args, **kw):
-    # How to avoid this disabling the parent window?
-    file = askopenfilename(*args, **kw)
-    if not file:
-        return
-    var.set(file)
 
 class Record(object):
     def __init__(self, *args, **kw):
