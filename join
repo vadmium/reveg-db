@@ -10,7 +10,8 @@ import csv
 from collections import (namedtuple, defaultdict)
 from xml.sax import saxutils
 from tkinter.tix import Tk
-from tkinter.ttk import (Button, Entry, Frame, Label, LabelFrame)
+from tkinter.ttk import (Button, Entry, Frame, Label, LabelFrame,
+    Checkbutton)
 import tkinter
 from functools import partial
 from tkinter import (StringVar, DoubleVar)
@@ -107,20 +108,23 @@ help\tDisplay this help""".format(**locals()))
     if ca_file is None and freq_file is None and not quads:
         root = Tk()
         root.title("Reveg DB")
-        root.columnconfigure(0, weight=1)
         
         frame = LabelFrame(root, text="Castlemaine plant list")
-        frame.grid(sticky=tkinter.EW)
+        frame.grid(columnspan=2, sticky=tkinter.EW)
         form = Form(frame)
         ca_file = add_file(form, CA_DEFAULT, text="Source file")
         
         grid = StringVar(value="{:03o}".format(grid))
-        form.add_field(Entry(frame, textvariable=grid),
-            text="Highlight grid sections")
+        field = Frame(frame)
+        Entry(field, textvariable=grid).pack(
+            side=tkinter.LEFT, expand=True, fill=tkinter.X)
+        Button(field, text="Menu . . .").pack(side=tkinter.LEFT)
+        form.add_field(field, text="Highlight grid sections")
+        
         form.add_field(Entry(frame), text="Select areas")
         
         frame = LabelFrame(root, text="EVC frequencies")
-        frame.grid(sticky=tkinter.EW)
+        frame.grid(columnspan=2, sticky=tkinter.EW)
         form = Form(frame)
         freq_file = add_file(form, FREQ_DEFAULT, text="Source file")
         form.add_field(Label(frame, text="(EVCs name, number)"), text="Select EVCs")
@@ -129,12 +133,20 @@ help\tDisplay this help""".format(**locals()))
             text="Frequency threshold")
         
         frame = LabelFrame(root, text="Viridans quadrats")
-        frame.grid(sticky=tkinter.EW)
+        frame.grid(columnspan=2, sticky=tkinter.EW)
         form = Form(frame)
         form.add_field(Label(frame, text="(quadrats file, name)"), text="Select Viridans quadrat")
         
+        out_file = StringVar(value="join.html")
+        form = Form(root)
+        entry = FileEntry(root, dialogtype="tk_getSaveFile",
+            variable=out_file)
+        form.add_field(entry, text="Output file")
+        Checkbutton(root, text="Include common names").grid(
+            column=1, sticky=tkinter.W)
+        
         Button(root, text="Produce list . . .",
-            command=partial(join, ca_file, None)).grid()
+            command=partial(join, ca_file, None)).grid(columnspan=2)
         root.bind("<Return>", partial(join, ca_file))
         
         root.mainloop()
@@ -294,7 +306,7 @@ def add_file(form, default, **kw):
     file = StringVar(value=default)
     FileEntry(field, dialogtype="tk_getOpenFile", variable=file).pack(
         side=tkinter.LEFT, expand=True, fill=tkinter.X)
-    Button(field, text="Clear", command=partial(file.set, "")).pack(
+    Button(field, text="Delete", command=partial(file.set, "")).pack(
         side=tkinter.LEFT)
     form.add_field(field, **kw)
     return file
