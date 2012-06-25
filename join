@@ -1,6 +1,6 @@
 #! /usr/bin/env python3
 
-from sys import (argv, stdout)
+from sys import (argv, stdout, stderr)
 import csv
 from collections import (namedtuple, defaultdict)
 from xml.sax import saxutils
@@ -206,6 +206,8 @@ help\tDisplay this help""".format(freq_thold))
         print("</tr>")
     
     print("</table></body></html>")
+    
+    print("Output HTML generated successfully", file=stderr)
 
 def print_tagged(tag, list):
     for text in list:
