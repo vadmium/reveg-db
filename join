@@ -154,39 +154,43 @@ help\tDisplay this help""".format(**locals()))
         root.mainloop()
         return
 
-class grid_menu(object):
+class grid_menu(Toplevel):
     def __init__(self, grid, master):
-        self.grid = grid
+        self.var = grid
         
-        self.dialog = Toplevel(master)
-        self.dialog.title("Grid sections")
-        self.dialog.bind("<Return>", self.close)
-        self.dialog.bind("<Escape>", self.close)
+        Toplevel.__init__(self, master)
+        self.title("Grid sections")
+        self.bind("<Return>", self.destroy)
+        self.bind("<Escape>", self.destroy)
         
-        Entry(self.dialog, textvariable=self.grid).pack(fill=tkinter.X)
+        Entry(self, textvariable=self.var).pack(fill=tkinter.X)
         
-        frame = Frame(self.dialog)
+        frame = Frame(self)
+        self.buttons = list()
         for column in range(3):
             frame.columnconfigure(column, weight=1)
         
         for row in range(3):
             frame.rowconfigure(row, weight=1)
             
+            buttons = list()
             for (column, name) in enumerate(self.names[row]):
-                value = 0o100 << row >> (column * 3)
-                command = partial(self.update, value)
+                command = partial(self.update_var, row, column)
                 button = Checkbutton(frame, command=command, text=name)
-                if int(self.grid.get(), 8) & value:
-                    button.state(("selected",))
                 button.grid(row=row, column=column,
                     sticky=tkinter.N + tkinter.S + tkinter.E + tkinter.W)
                 
-                if not int(self.dialog.focus_lastfor()["takefocus"]):
+                if not int(self.focus_lastfor()["takefocus"]):
                     button.focus_set()
+                buttons.append(button)
+            self.buttons.append(buttons)
         
         frame.pack(fill=tkinter.BOTH, expand=True)
         
-        button = Button(self.dialog, text="Close", command=self.close)
+        self.var_cb = self.var.trace_variable("w", self.update_buttons)
+        self.update_buttons()
+        
+        button = Button(self, text="Close", command=self.destroy)
         button.pack(side=tkinter.BOTTOM)
     
     names = (
@@ -195,17 +199,28 @@ class grid_menu(object):
         ("N10", "N11", "N12"),
     )
     
-    def update(self, value):
-        current = int(self.grid.get(), 8)
-        button = self.dialog.focus_lastfor()
+    def update_var(self, row, column):
+        current = int(self.var.get(), 8)
+        value = 0o100 << row >> (column * 3)
+        button = self.buttons[row][column]
         if button.instate(("selected",)):
             current |= value
         else:
             current &= ~value
-        self.grid.set("{:03o}".format(current))
+        self.var.set("{:03o}".format(current))
     
-    def close(self, *args):
-        self.dialog.destroy()
+    def destroy(self, *_):
+        self.var.trace_vdelete("w", self.var_cb)
+        return Toplevel.destroy(self)
+    
+    def update_buttons(self, *_):
+        value = int(self.var.get(), 8)
+        for (row, buttons) in enumerate(self.buttons):
+            for (column, button) in enumerate(buttons):
+                if value & 0o100 << row >> (column * 3):
+                    button.state(("selected",))
+                else:
+                    button.state(("!selected",))
 
 def join(ca_file, _):
     ca_file = ca_file.get()
