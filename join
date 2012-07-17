@@ -14,7 +14,7 @@ from tkinter.ttk import (Button, Entry, Frame, Label, LabelFrame,
     Checkbutton)
 import tkinter
 from functools import partial
-from tkinter import (StringVar, DoubleVar)
+from tkinter import (StringVar, DoubleVar, Toplevel)
 from tkinter.tix import FileEntry
 from lib.tk import Form
 
@@ -118,7 +118,9 @@ help\tDisplay this help""".format(**locals()))
         field = Frame(frame)
         Entry(field, textvariable=grid).pack(
             side=tkinter.LEFT, expand=True, fill=tkinter.X)
-        Button(field, text="Menu . . .").pack(side=tkinter.LEFT)
+        grid_button = partial(grid_menu, grid, field)
+        grid_button = Button(field, text="Menu . . .", command=grid_button)
+        grid_button.pack(side=tkinter.LEFT)
         form.add_field(field, text="Highlight grid sections")
         
         form.add_field(Entry(frame), text="Select areas")
@@ -151,6 +153,59 @@ help\tDisplay this help""".format(**locals()))
         
         root.mainloop()
         return
+
+class grid_menu(object):
+    def __init__(self, grid, master):
+        self.grid = grid
+        
+        self.dialog = Toplevel(master)
+        self.dialog.title("Grid sections")
+        self.dialog.bind("<Return>", self.close)
+        self.dialog.bind("<Escape>", self.close)
+        
+        Entry(self.dialog, textvariable=self.grid).pack(fill=tkinter.X)
+        
+        frame = Frame(self.dialog)
+        for column in range(3):
+            frame.columnconfigure(column, weight=1)
+        
+        for row in range(3):
+            frame.rowconfigure(row, weight=1)
+            
+            for (column, name) in enumerate(self.names[row]):
+                value = 0o100 << row >> (column * 3)
+                command = partial(self.update, value)
+                button = Checkbutton(frame, command=command, text=name)
+                if int(self.grid.get(), 8) & value:
+                    button.state(("selected",))
+                button.grid(row=row, column=column,
+                    sticky=tkinter.N + tkinter.S + tkinter.E + tkinter.W)
+                
+                if not int(self.dialog.focus_lastfor()["takefocus"]):
+                    button.focus_set()
+        
+        frame.pack(fill=tkinter.BOTH, expand=True)
+        
+        button = Button(self.dialog, text="Close", command=self.close)
+        button.pack(side=tkinter.BOTTOM)
+    
+    names = (
+        ("M46", "M47", "M48"),
+        ("N1", "N2", "N3"),
+        ("N10", "N11", "N12"),
+    )
+    
+    def update(self, value):
+        current = int(self.grid.get(), 8)
+        button = self.dialog.focus_lastfor()
+        if button.instate(("selected",)):
+            current |= value
+        else:
+            current &= ~value
+        self.grid.set("{:03o}".format(current))
+    
+    def close(self, *args):
+        self.dialog.destroy()
 
 def join(ca_file, _):
     ca_file = ca_file.get()
