@@ -16,17 +16,18 @@ import tkinter
 from functools import partial
 from tkinter import (StringVar, DoubleVar, Toplevel)
 from tkinter.tix import FileEntry
+from tkinter.ttk import Treeview
+from lib.tk import treeview_add
 from lib.tk import Form
 
 def main():
-    FREQ_DEFAULT = "GoldfieldsBrgnlEVCSppFreq.xls.csv"
     CA_DEFAULT = "PLANT_CA.TXT"
     
     help = False
     grid = 0o000
     area = []
     plants = []
-    freq_thold = 0.3
+    freq_thold = THOLD_DEFAULT
     ca_file = None
     freq_file = None
     evcs = []
@@ -97,7 +98,7 @@ quad <Viridans CSV file>
 \tprobably better than the alphabetical because some types of plants are
 \tthen easily identified by the program and ignored.
 thold <threshold>
-\tEVC frequency threshold (default: {freq_thold})
+\tEVC frequency threshold (default: {THOLD_DEFAULT})
 help\tDisplay this help""".format(**locals()))
         return
     
@@ -125,14 +126,7 @@ help\tDisplay this help""".format(**locals()))
         
         form.add_field(Entry(frame), text="Select areas")
         
-        frame = LabelFrame(root, text="EVC frequencies")
-        frame.grid(columnspan=2, sticky=tkinter.EW)
-        form = Form(frame)
-        freq_file = add_file(form, FREQ_DEFAULT, text="Source file")
-        form.add_field(Label(frame, text="(EVCs name, number)"), text="Select EVCs")
-        freq_thold = DoubleVar(value=freq_thold)
-        form.add_field(Entry(frame, textvariable=freq_thold),
-            text="Frequency threshold")
+        freqs = Freqs(root)
         
         frame = LabelFrame(root, text="Viridans quadrats")
         frame.grid(columnspan=2, sticky=tkinter.EW)
@@ -153,6 +147,9 @@ help\tDisplay this help""".format(**locals()))
         
         root.mainloop()
         return
+
+FREQ_DEFAULT = "GoldfieldsBrgnlEVCSppFreq.xls.csv"
+THOLD_DEFAULT = 0.3
 
 class grid_menu(Toplevel):
     def __init__(self, grid, master):
@@ -359,17 +356,34 @@ def print_tagged(tag, list):
 
 EVC_KEYS = ("EVC_DESC", "EVC")
 
-def list_evcs(freq_file):
-    freq_file = freq_file.get()
+class Freqs(object):
+    def __init__(self, root):
+        frame = LabelFrame(root, text="EVC frequencies")
+        frame.grid(columnspan=2,
+            sticky=tkinter.E + tkinter.W + tkinter.N + tkinter.S)
+        form = Form(frame)
+        root.rowconfigure(frame.grid_info()["row"], weight=1)
+        
+        self.file = add_file(form, FREQ_DEFAULT, text="Source file")
+        
+        self.evcs = Treeview(frame, show=("tree",), columns=tuple(range(1)))
+        form.add_field(self.evcs, text="Select EVCs", multiline=True)
+        
+        self.file.trace("w", self.update)
+        
+        self.thold = DoubleVar(value=THOLD_DEFAULT)
+        form.add_field(Entry(frame, textvariable=self.thold),
+            text="Frequency threshold")
     
-    with open(freq_file, newline="") as file:
-        evcs = set(tuple(row[key] for key in EVC_KEYS)
-            for row in csv.DictReader(file))
-    
-    out = csv.writer(stdout)
-    out.writerow(EVC_KEYS)
-    out.writerows(sorted(evcs))
-    return
+    def update(self, *_):
+        self.evcs.set_children("")
+        if not self.file.get():
+            return
+        with open(self.file.get(), newline="") as file:
+            evcs = set(tuple(row[key] for key in EVC_KEYS)
+                for row in csv.DictReader(file))
+        for (name, number) in sorted(evcs):
+            treeview_add(self.evcs, text=name, values=(number,))
 
 def add_file(form, default, **kw):
     field = Frame(form.master)
