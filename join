@@ -121,11 +121,7 @@ help\tDisplay this help""".format(**locals()))
         form.add_field(Entry(frame), text="Select areas")
         
         freqs = Freqs(root)
-        
-        frame = LabelFrame(root, text="Viridans quadrats")
-        frame.grid(columnspan=2, sticky=tkinter.EW)
-        form = Form(frame)
-        form.add_field(Label(frame, text="(quadrats file, name)"), text="Select Viridans quadrat")
+        quads = Quads(root)
         
         out_file = StringVar(value="join.html")
         form = Form(root)
@@ -212,6 +208,47 @@ class grid_menu(Toplevel):
                     button.state(("selected",))
                 else:
                     button.state(("!selected",))
+
+class Quads(object):
+    def __init__(self, root):
+        frame = LabelFrame(root, text="Viridans quadrats")
+        frame.grid(columnspan=2,
+            sticky=tkinter.E + tkinter.W + tkinter.N + tkinter.S)
+        form = Form(frame)
+        root.rowconfigure(frame.grid_info()["row"], weight=1)
+        
+        self.file = StringVar()
+        entry = FileEntry(frame, dialogtype="tk_getOpenFile",
+            variable=self.file)
+        form.add_field(entry, text="Source file")
+        
+        self.name = StringVar()
+        form.add_field(Entry(frame, textvariable=self.name), text="Name")
+        
+        buttons = Frame(frame)
+        button = Button(buttons, text="Add", command=self.add)
+        button.pack(side=tkinter.LEFT, expand=True)
+        button = Button(buttons, text="Remove", command=self.remove)
+        button.pack(side=tkinter.LEFT, expand=True)
+        buttons.grid(column=1, sticky=tkinter.E + tkinter.W)
+        
+        self.list = Treeview(frame, show=("tree",), columns=tuple(range(1)))
+        form.add_field(self.list, text="Select quadrats", multiline=True)
+        self.list.bind("<<TreeviewSelect>>", self.select)
+    
+    def add(self):
+        file = self.file.get()
+        name = self.name.get()
+        treeview_add(self.list, text=file, values=(name,))
+    
+    def select(self, *_):
+        item = self.list.item(self.list.focus())
+        self.file.set(item["text"])
+        (name,) = item["values"]
+        self.name.set(name)
+    
+    def remove(self):
+        self.list.delete(*self.list.selection())
 
 def join(ca_file, _):
     ca_file = ca_file.get()
