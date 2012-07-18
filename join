@@ -69,8 +69,6 @@ join ca ... [area ...] [freqs ... evc ...] [quad ...] [options] > output.html
 \tIncludes only those plants selected by the "area", "evc" and "quad"
 \toptions. Ignores plants with * and + origin, and ferns, orchids and
 \tmistletoes.
-join freqs ...
-\tLists EVCs found
 
 Options:
 ca <{CA_DEFAULT}>
@@ -100,10 +98,6 @@ quad <Viridans CSV file>
 thold <threshold>
 \tEVC frequency threshold (default: {THOLD_DEFAULT})
 help\tDisplay this help""".format(**locals()))
-        return
-    
-    if freq_file is not None and not evcs:
-        list_evcs(freq_file)
         return
     
     if ca_file is None and freq_file is None and not quads:
