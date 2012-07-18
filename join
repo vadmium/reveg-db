@@ -5,7 +5,7 @@
 #@setlocal enableextensions & python -x %~f0 %* & goto :EOF
 #cmd shebang needs quotes for "%~f0"
 
-from sys import (argv, stdout, stderr)
+from sys import (argv, stderr)
 import csv
 from collections import (namedtuple, defaultdict)
 from xml.sax import saxutils
@@ -13,6 +13,7 @@ from tkinter.tix import Tk
 from tkinter.ttk import (Button, Entry, Frame, Label, LabelFrame,
     Checkbutton)
 import tkinter
+from tkinter.filedialog import asksaveasfile
 from functools import partial
 from tkinter import (StringVar, DoubleVar, Toplevel)
 from tkinter.tix import FileEntry
@@ -114,9 +115,10 @@ class Ui(object):
     def __init__(self, root, grid, area, evcs, freq_thold):
         self.root = root
         self.root.title("Reveg DB")
+        self.root.columnconfigure(0, weight=1)
         
         frame = LabelFrame(self.root, text="Castlemaine plant list")
-        frame.grid(columnspan=2, sticky=tkinter.EW)
+        frame.grid(sticky=tkinter.EW)
         form = Form(frame)
         (self.ca_file, ca_entry) = add_file(form, CA_DEFAULT,
             text="Source file")
@@ -138,17 +140,9 @@ class Ui(object):
         self.freqs = Freqs(self.root, evcs=evcs, thold=freq_thold)
         self.quads = Quads(self.root)
         
-        self.out_file = StringVar(value="join.html")
-        form = Form(self.root)
-        entry = FileEntry(self.root, dialogtype="tk_getSaveFile",
-            variable=self.out_file)
-        form.add_field(entry, text="Output file")
-        button = Checkbutton(self.root, text="Include common names")
-        button.grid(column=1, sticky=tkinter.W)
-        
         button = Button(self.root, text="Produce list . . .",
             command=self.join)
-        button.grid(columnspan=2)
+        button.grid()
         
         ca_entry.focus_set()
     
@@ -249,7 +243,7 @@ class grid_menu(Toplevel):
 class Quads(object):
     def __init__(self, root):
         frame = LabelFrame(root, text="Viridans quadrats")
-        frame.grid(columnspan=2, sticky=(tkinter.EW, tkinter.NS))
+        frame.grid(sticky=(tkinter.EW, tkinter.NS))
         form = Form(frame)
         root.rowconfigure(frame.grid_info()["row"], weight=1)
         
@@ -316,19 +310,32 @@ class Quads(object):
 class join(object):
     def __init__(self, window, *,
     ca_file, grid, area, freq_file, evcs, freq_thold, quads):
-        for name in (
+        for name in ("window, "
         "ca_file, grid, area, "
         "freq_file, evcs, freq_thold, "
         "quads").split(", "):
             setattr(self, name, vars()[name])
         
-        output = ScrolledTree(window, headings=self.headings())
-        output.pack()
-        entries = list()
+        self.window.bind("<Return>", self.save)
+        
+        output = ScrolledTree(self.window, headings=self.headings())
+        output.grid(sticky=tkinter.NSEW)
+        self.window.rowconfigure(0, weight=1)
+        self.window.columnconfigure(0, weight=1)
+        self.entries = list()
         for entry in self:
-            entries.append(entry)
+            self.entries.append(entry)
             output.add(text=entry[0], values=entry[1:])
-        self.write_html(entries)
+        
+        buttons = Frame(self.window)
+        buttons.grid()
+        button = Button(buttons, text="Save as HTML . . .",
+            command=self.save, default="active")
+        button.grid(row=0, column=0)
+        button = Button(buttons, text="Close", command=self.window.destroy)
+        button.grid(row=0, column=1)
+        
+        output.tree.focus_set()
     
     def headings(self):
         return ["name", "ex", "area", "grid"] + self.evcs + self.quads
@@ -452,29 +459,41 @@ class join(object):
             res.extend("Y" if q else "" for q in inquads)
             yield res
     
-    def write_html(self, entries):
-        print("<html><body><table>")
-        print("<tr>")
-        print_tagged("th", self.headings())
-        print("</tr>")
+    def write_html(self, entries, file):
+        print("<html><body><table>", file=file)
+        print("<tr>", file=file)
+        print_tagged("th", self.headings(), file)
+        print("</tr>", file=file)
         
         for entry in entries:
-            print("<tr>")
-            print_tagged("td", entry)
-            print("</tr>")
+            print("<tr>", file=file)
+            print_tagged("td", entry, file)
+            print("</tr>", file=file)
         
-        print("</table></body></html>")
+        print("</table></body></html>", file=file)
+    
+    def save(self, event=None):
+        file = asksaveasfile(title="Save as HTML", parent=self.window,
+            filetypes=(
+                ("HTML", (".html", ".htm")),
+                ("All", ("*",)),
+            ))
+        if not file:
+            return
+        with file:
+            self.write_html(self.entries, file)
 
-def print_tagged(tag, list):
+def print_tagged(tag, list, file):
     for text in list:
-        print("<{tag}>{}</{tag}>".format(saxutils.escape(text), tag=tag))
+        text = saxutils.escape(text)
+        print("<{tag}>{text}</{tag}>".format_map(locals()), file=file)
 
 EVC_KEYS = ("EVC_DESC", "EVC")
 
 class Freqs(object):
     def __init__(self, root, evcs, thold):
         frame = LabelFrame(root, text="EVC frequencies")
-        frame.grid(columnspan=2, sticky=(tkinter.EW, tkinter.NS))
+        frame.grid(sticky=(tkinter.EW, tkinter.NS))
         form = Form(frame)
         root.rowconfigure(frame.grid_info()["row"], weight=1)
         

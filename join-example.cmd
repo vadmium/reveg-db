@@ -11,6 +11,5 @@ evc "Granitic Hills Woodland" ^
 quad "%USERPROFILE%\My Documents\plant lists\Viridans Faraday NE.CSV" ^
 quad "%USERPROFILE%\My Documents\plant lists\Viridans Faraday NW.CSV" ^
 quad "%USERPROFILE%\My Documents\plant lists\Viridans Faraday SE.CSV" ^
-quad "%USERPROFILE%\My Documents\plant lists\Viridans Faraday SW.CSV" ^
- > "join-output.html"
+quad "%USERPROFILE%\My Documents\plant lists\Viridans Faraday SW.CSV"
 pause
