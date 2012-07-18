@@ -20,8 +20,6 @@ from lib.tk import ScrolledTree
 from lib.tk import Form
 
 def main():
-    CA_DEFAULT = "PLANT_CA.TXT"
-    
     help = False
     grid = 0o000
     area = []
@@ -100,44 +98,67 @@ help\tDisplay this help""".format(**locals()))
         return
     
     if ca_file is None and freq_file is None and not quads:
-        root = Tk()
-        root.title("Reveg DB")
+        Ui(grid=grid)
+    else:
+        join(
+            ca_file=ca_file, grid=grid, area=area,
+            freq_file=freq_file, evcs=evcs, freq_thold=freq_thold,
+            quads=quads,
+        )
+
+class Ui(object):
+    def __init__(self, grid=0o000):
+        self.root = Tk()
+        self.root.title("Reveg DB")
         
-        frame = LabelFrame(root, text="Castlemaine plant list")
+        frame = LabelFrame(self.root, text="Castlemaine plant list")
         frame.grid(columnspan=2, sticky=tkinter.EW)
         form = Form(frame)
-        ca_file = add_file(form, CA_DEFAULT, text="Source file")
+        self.ca_file = add_file(form, CA_DEFAULT, text="Source file")
         
-        grid = StringVar(value="{:03o}".format(grid))
+        self.grid = StringVar(value="{:03o}".format(grid))
         field = Frame(frame)
-        Entry(field, textvariable=grid).pack(
+        Entry(field, textvariable=self.grid).pack(
             side=tkinter.LEFT, expand=True, fill=tkinter.X)
-        grid_button = partial(grid_menu, grid, field)
+        grid_button = partial(grid_menu, self.grid, field)
         grid_button = Button(field, text="Menu . . .", command=grid_button)
         grid_button.pack(side=tkinter.LEFT)
         form.add_field(field, text="Highlight grid sections")
         
-        form.add_field(Entry(frame), text="Select areas")
+        self.area = Entry(frame)
+        form.add_field(self.area, text="Select areas")
         
-        freqs = Freqs(root)
-        quads = Quads(root)
+        self.freqs = Freqs(self.root)
+        self.quads = Quads(self.root)
         
-        out_file = StringVar(value="join.html")
-        form = Form(root)
-        entry = FileEntry(root, dialogtype="tk_getSaveFile",
-            variable=out_file)
+        self.out_file = StringVar(value="join.html")
+        form = Form(self.root)
+        entry = FileEntry(self.root, dialogtype="tk_getSaveFile",
+            variable=self.out_file)
         form.add_field(entry, text="Output file")
-        Checkbutton(root, text="Include common names").grid(
-            column=1, sticky=tkinter.W)
+        button = Checkbutton(self.root, text="Include common names")
+        button.grid(column=1, sticky=tkinter.W)
         
-        Button(root, text="Produce list . . .",
-            command=partial(join, ca_file, None)).grid(columnspan=2)
-        root.bind("<Return>", partial(join, ca_file))
+        button = Button(self.root, text="Produce list . . .",
+            command=self.join)
+        button.grid(columnspan=2)
+        self.root.bind("<Return>", self.join)
         
-        root.mainloop()
-        return
+        self.root.mainloop()
+    
+    def join(self):
+        return join(
+            ca_file=self.ca_file.get(),
+            grid=int(self.grid.get(), 8),
+            area=self.area.get(),
+            freq_file=self.freq_file.get(),
+            evcs=...,
+            freq_thold=self.freqs.freq_thold.get(),
+            quads=...,
+        )
 
 FREQ_DEFAULT = "GoldfieldsBrgnlEVCSppFreq.xls.csv"
+CA_DEFAULT = "PLANT_CA.TXT"
 THOLD_DEFAULT = 0.3
 
 class grid_menu(Toplevel):
@@ -247,9 +268,7 @@ class Quads(object):
     def remove(self):
         self.list.tree.delete(*self.list.tree.selection())
 
-def join(ca_file, _):
-    ca_file = ca_file.get()
-    
+def join(ca_file, grid, area, freq_file, evcs, freq_thold, quads):
     class Plant(Record):
         def __init__(self):
             Record.__init__(self,
