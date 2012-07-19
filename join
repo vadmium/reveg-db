@@ -163,8 +163,7 @@ class grid_menu(Toplevel):
             for (column, name) in enumerate(self.names[row]):
                 command = partial(self.update_var, row, column)
                 button = Checkbutton(frame, command=command, text=name)
-                button.grid(row=row, column=column,
-                    sticky=tkinter.N + tkinter.S + tkinter.E + tkinter.W)
+                button.grid(row=row, column=column, sticky=tkinter.NSEW)
                 
                 if not int(self.focus_lastfor()["takefocus"]):
                     button.focus_set()
@@ -176,7 +175,7 @@ class grid_menu(Toplevel):
         self.var_cb = self.var.trace_variable("w", self.update_buttons)
         self.update_buttons()
         
-        button = Button(self, text="Close", command=self.destroy)
+        button = Button(self, text="Close", command=self.destroy, default="active")
         button.pack(side=tkinter.BOTTOM)
     
     names = (
@@ -211,8 +210,7 @@ class grid_menu(Toplevel):
 class Quads(object):
     def __init__(self, root):
         frame = LabelFrame(root, text="Viridans quadrats")
-        frame.grid(columnspan=2,
-            sticky=tkinter.E + tkinter.W + tkinter.N + tkinter.S)
+        frame.grid(columnspan=2, sticky=(tkinter.EW, tkinter.NS))
         form = Form(frame)
         root.rowconfigure(frame.grid_info()["row"], weight=1)
         
@@ -229,7 +227,7 @@ class Quads(object):
         button.pack(side=tkinter.LEFT, expand=True)
         button = Button(buttons, text="Remove", command=self.remove)
         button.pack(side=tkinter.LEFT, expand=True)
-        buttons.grid(column=1, sticky=tkinter.E + tkinter.W)
+        buttons.grid(column=1, sticky=tkinter.EW)
         
         self.list = ScrolledTree(frame, columns=2)
         form.add_field(self.list, text="Select quadrats", multiline=True)
@@ -238,7 +236,7 @@ class Quads(object):
     def add(self):
         file = self.file.get()
         name = self.name.get()
-        self.list.add(text=file, values=(name,))
+        self.list.tree.see(self.list.add(text=file, values=(name,)))
     
     def select(self, *_):
         item = self.list.tree.item(self.list.tree.focus())
@@ -389,8 +387,7 @@ EVC_KEYS = ("EVC_DESC", "EVC")
 class Freqs(object):
     def __init__(self, root):
         frame = LabelFrame(root, text="EVC frequencies")
-        frame.grid(columnspan=2,
-            sticky=tkinter.E + tkinter.W + tkinter.N + tkinter.S)
+        frame.grid(columnspan=2, sticky=(tkinter.EW, tkinter.NS))
         form = Form(frame)
         root.rowconfigure(frame.grid_info()["row"], weight=1)
         
