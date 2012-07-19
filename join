@@ -118,8 +118,9 @@ class Ui(object):
         
         self.grid = StringVar(value="{:03o}".format(grid))
         field = Frame(frame)
-        Entry(field, textvariable=self.grid).pack(
-            side=tkinter.LEFT, expand=True, fill=tkinter.X)
+        entry = Entry(field, textvariable=self.grid, validate="all",
+            validatecommand=self.validate_grid)
+        entry.pack(side=tkinter.LEFT, expand=True, fill=tkinter.X)
         grid_button = partial(grid_menu, self.grid, field)
         grid_button = Button(field, text="Menu . . .", command=grid_button)
         grid_button.pack(side=tkinter.LEFT)
@@ -156,6 +157,16 @@ class Ui(object):
             freq_thold=self.freqs.freq_thold.get(),
             quads=...,
         )
+    
+    def validate_grid(self, *args, **kw):
+        try:
+            value = self.grid.get()
+        except ValueError as err:
+            print("grid", err)
+            return False
+        
+        print(repr(value), self.validate_grid, args, kw)
+        return True
 
 FREQ_DEFAULT = "GoldfieldsBrgnlEVCSppFreq.xls.csv"
 CA_DEFAULT = "PLANT_CA.TXT"
@@ -418,8 +429,9 @@ class Freqs(object):
         self.file.trace("w", self.update)
         
         self.thold = DoubleVar(value=THOLD_DEFAULT)
-        form.add_field(Entry(frame, textvariable=self.thold),
-            text="Frequency threshold")
+        entry = Entry(frame, textvariable=self.thold, validate="all",
+            validatecommand=self.validate_thold)
+        form.add_field(entry, text="Frequency threshold")
     
     def update(self, *_):
         self.evcs.tree.set_children("")
@@ -430,6 +442,16 @@ class Freqs(object):
                 for row in csv.DictReader(file))
         for (name, number) in sorted(evcs):
             self.evcs.add(text=name, values=(number,))
+    
+    def validate_thold(self, *args, **kw):
+        try:
+            value = self.thold.get()
+        except ValueError as err:
+            print("thold", err)
+            return False
+        
+        print(repr(value), self.validate_thold, args, kw)
+        return True
 
 def add_file(form, default, **kw):
     field = Frame(form.master)
