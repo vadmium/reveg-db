@@ -404,8 +404,12 @@ class Freqs(object):
     
     def update(self, *_):
         self.evcs.tree.set_children("")
+        self.evcs.tree.column("#0", width=0)
+        self.evcs.tree.column(0, width=0)
+        
         if not self.file.get():
             return
+        
         with open(self.file.get(), newline="") as file:
             evcs = set(tuple(row[key] for key in EVC_KEYS)
                 for row in csv.DictReader(file))
