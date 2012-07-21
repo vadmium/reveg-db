@@ -310,133 +310,133 @@ class Quads(object):
         return quads
 
 def join(ca_file, grid, area, freq_file, evcs, freq_thold, quads):
-    class Plant(Record):
-        def __init__(self):
-            Record.__init__(self,
-                ca=None,
-                evcs=dict(),
-                quads=dict(),
-            )
-    plants = defaultdict(Plant)
-    
-    if ca_file is not None:
-        CaPlant = namedtuple("CaPlant",
-            "name, ex, common, family, fam_com, group, area, grid, note")
-        with open(ca_file, newline="") as file:
-            for plant in csv.reader(file):
-                if plant[0].startswith("\x1A"):
-                    break
-                
-                plant = CaPlant._make(plant)
-                
-                if (not plant.grid or plant.ex in tuple("*+") or
-                plant.group == "f" or
-                plant.family in ("Orchidaceae", "Loranthaceae")):
-                    continue
-                
-                plants[plant.name].ca = plant
-    
-    if freq_file is not None:
-        DIV_FERN = "2"
-        DIV_MOSS = "5"
-        FAM_MISTLETOE = "124"
-        FAM_ORCHID = "124"
+        class Plant(Record):
+            def __init__(self):
+                Record.__init__(self,
+                    ca=None,
+                    evcs=dict(),
+                    quads=dict(),
+                )
+        plants = defaultdict(Plant)
         
-        max_freq = dict()
-        
-        with open(freq_file, newline="") as file:
-            for plant in csv.DictReader(file):
-                for key in EVC_KEYS:
-                    evc = plant[key]
-                    if evc not in evcs:
+        if ca_file is not None:
+            CaPlant = namedtuple("CaPlant",
+                "name, ex, common, family, fam_com, group, area, grid, note")
+            with open(ca_file, newline="") as file:
+                for plant in csv.reader(file):
+                    if plant[0].startswith("\x1A"):
+                        break
+                    
+                    plant = CaPlant._make(plant)
+                    
+                    if (not plant.grid or plant.ex in tuple("*+") or
+                    plant.group == "f" or
+                    plant.family in ("Orchidaceae", "Loranthaceae")):
                         continue
                     
-                    freq = int(plant["Frequency"])
-                    try:
-                        max = max_freq[evc]
-                    except LookupError:
-                        max_freq[evc] = freq
-                    else:
-                        if freq > max:
+                    plants[plant.name].ca = plant
+        
+        if freq_file is not None:
+            DIV_FERN = "2"
+            DIV_MOSS = "5"
+            FAM_MISTLETOE = "124"
+            FAM_ORCHID = "124"
+            
+            max_freq = dict()
+            
+            with open(freq_file, newline="") as file:
+                for plant in csv.DictReader(file):
+                    for key in EVC_KEYS:
+                        evc = plant[key]
+                        if evc not in evcs:
+                            continue
+                        
+                        freq = int(plant["Frequency"])
+                        try:
+                            max = max_freq[evc]
+                        except LookupError:
                             max_freq[evc] = freq
-                    
-                    if (plant["ORIGIN"] == "*" or
-                    plant["DIVISION"] in (DIV_FERN, DIV_MOSS) or
-                    plant["FAMILYNO"] in (FAM_ORCHID, FAM_MISTLETOE)):
+                        else:
+                            if freq > max:
+                                max_freq[evc] = freq
+                        
+                        if (plant["ORIGIN"] == "*" or
+                        plant["DIVISION"] in (DIV_FERN, DIV_MOSS) or
+                        plant["FAMILYNO"] in (FAM_ORCHID, FAM_MISTLETOE)):
+                            continue
+                        
+                        plant["Frequency"] = freq
+                        plants[plant["NAME"]].evcs[evc] = plant
+        
+        ViridansPlant = namedtuple("ViridansPlant",
+            "arots, vrots, origin, name, common")
+        for quad_file in quads:
+            with open(quad_file, newline="") as file:
+                file = csv.reader(file)
+                next(file)
+                group = None
+                family = None
+                for row in file:
+                    if row[1] == "t1":
+                        (group, _, *_) = row
+                        family = None
+                        continue
+                    elif row[1] == "t2":
+                        (family, _, *_) = row
                         continue
                     
-                    plant["Frequency"] = freq
-                    plants[plant["NAME"]].evcs[evc] = plant
-    
-    ViridansPlant = namedtuple("ViridansPlant",
-        "arots, vrots, origin, name, common")
-    for quad_file in quads:
-        with open(quad_file, newline="") as file:
-            file = csv.reader(file)
-            next(file)
-            group = None
-            family = None
-            for row in file:
-                if row[1] == "t1":
-                    (group, _, *_) = row
-                    family = None
-                    continue
-                elif row[1] == "t2":
-                    (family, _, *_) = row
-                    continue
-                
-                if (group == "6: Ferns and Fern-like Plants" or
-                family in ("Orchidaceae", "Loranthaceae")):
-                    continue
-                
-                plant = ViridansPlant._make(row)
-                if plant.origin == "*":
-                    continue
-                
-                plants[plant.name].quads[quad_file] = plant
-    
-    print("<html><body><table>")
-    print("<tr><th>name</th><th>ex</th><th>area</th><th>grid</th>")
-    print_tagged("th", evcs)
-    print_tagged("th", quads)
-    print("</tr>")
-    
-    for name in sorted(plants.keys()):
-        plant = plants[name]
+                    if (group == "6: Ferns and Fern-like Plants" or
+                    family in ("Orchidaceae", "Loranthaceae")):
+                        continue
+                    
+                    plant = ViridansPlant._make(row)
+                    if plant.origin == "*":
+                        continue
+                    
+                    plants[plant.name].quads[quad_file] = plant
         
-        if plant.ca is None:
-            plant_ex = ""
-            plant_area = ""
-            plant_grid = ""
-        else:
-            plant_ex = plant.ca.ex
-            plant_area = "".join(a for a in plant.ca.area if a in area)
-            plant_grid = "{:03o}".format(int(plant.ca.grid, 8) & grid)
-        
-        rel = list()
-        thold_met = False
-        for evc in evcs:
-            try:
-                evc_plant = plant.evcs[evc]
-            except LookupError:
-                rel.append("")
-            else:
-                freq = evc_plant["Frequency"] / max_freq[evc]
-                thold_met = thold_met or freq >= freq_thold
-                rel.append("{:.2f}".format(freq))
-        
-        inquads = tuple(quad in plant.quads for quad in quads)
-        
-        if not plant_area and not thold_met and not any(inquads):
-            continue
-        
-        print("<tr>")
-        print_tagged("td", (name, plant_ex, plant_area, plant_grid))
-        print_tagged("td", rel)
-        print_tagged("td", ("Y" if q else "" for q in inquads))
+        print("<html><body><table>")
+        print("<tr><th>name</th><th>ex</th><th>area</th><th>grid</th>")
+        print_tagged("th", evcs)
+        print_tagged("th", quads)
         print("</tr>")
-    
-    print("</table></body></html>")
+        
+        for name in sorted(plants.keys()):
+            plant = plants[name]
+            
+            if plant.ca is None:
+                plant_ex = ""
+                plant_area = ""
+                plant_grid = ""
+            else:
+                plant_ex = plant.ca.ex
+                plant_area = "".join(a for a in plant.ca.area if a in area)
+                plant_grid = "{:03o}".format(int(plant.ca.grid, 8) & grid)
+            
+            rel = list()
+            thold_met = False
+            for evc in evcs:
+                try:
+                    evc_plant = plant.evcs[evc]
+                except LookupError:
+                    rel.append("")
+                else:
+                    freq = evc_plant["Frequency"] / max_freq[evc]
+                    thold_met = thold_met or freq >= freq_thold
+                    rel.append("{:.2f}".format(freq))
+            
+            inquads = tuple(quad in plant.quads for quad in quads)
+            
+            if not plant_area and not thold_met and not any(inquads):
+                continue
+            
+            print("<tr>")
+            print_tagged("td", (name, plant_ex, plant_area, plant_grid))
+            print_tagged("td", rel)
+            print_tagged("td", ("Y" if q else "" for q in inquads))
+            print("</tr>")
+        
+        print("</table></body></html>")
 
 def print_tagged(tag, list):
     for text in list:
