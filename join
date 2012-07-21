@@ -148,10 +148,10 @@ class Ui(object):
     
     def join(self):
         join(Toplevel(self.root),
-            ca_file=self.ca_file.get(),
+            ca_file=self.ca_file.get() or None,
             grid=int(self.grid.get(), 8),
             area=self.area.get(),
-            freq_file=self.freqs.file.get(),
+            freq_file=self.freqs.file.get() or None,
             evcs=self.freqs.get_evcs(),
             freq_thold=self.freqs.thold.get(),
             quads=self.quads.get(),
