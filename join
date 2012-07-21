@@ -254,30 +254,32 @@ class Quads(object):
             variable=self.file)
         form.add_field(entry, text="Source file")
         
-        self.name = StringVar()
-        form.add_field(Entry(frame, textvariable=self.name), text="Name")
-        
         buttons = Frame(frame)
         button = Button(buttons, text="Add", command=self.add)
         button.pack(side=tkinter.LEFT, expand=True)
         button = Button(buttons, text="Remove", command=self.remove)
         button.pack(side=tkinter.LEFT, expand=True)
-        buttons.grid(column=1, sticky=tkinter.EW)
+        buttons.grid(columnspan=2, sticky=tkinter.EW)
         
-        self.list = ScrolledTree(frame, columns=2)
-        form.add_field(self.list, text="Select quadrats", multiline=True)
+        self.list = ScrolledTree(frame)
+        self.list.grid(columnspan=2, sticky=tkinter.NSEW)
+        frame.rowconfigure(self.list.grid_info()["row"], weight=1)
         self.list.bind_select(self.select)
     
     def add(self):
-        file = self.file.get()
-        name = self.name.get()
-        self.list.tree.see(self.list.add(text=file, values=(name,)))
+        item = self.list.add(text=self.file.get())
+        self.list.tree.focus(item)
+        self.list.tree.selection_set(item)
+        
+        # Apparently needed when calling Treeview.see() straight after adding
+        # an item
+        self.list.update_idletasks()
+        
+        self.list.tree.see(item)
     
     def select(self, *_):
-        item = self.list.tree.item(self.list.tree.focus())
-        self.file.set(item["text"])
-        (name,) = item["values"]
-        self.name.set(name)
+        (item,) = self.list.tree.selection()
+        self.file.set(self.list.tree.item(item, option="text"))
     
     def remove(self):
         self.list.tree.delete(*self.list.tree.selection())
