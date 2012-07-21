@@ -130,7 +130,7 @@ class Ui(object):
         entry = Entry(frame, textvariable=self.area)
         form.add_field(entry, text="Select areas")
         
-        self.freqs = Freqs(self.root, freq_thold)
+        self.freqs = Freqs(self.root, evcs=evcs, thold=freq_thold)
         self.quads = Quads(self.root)
         
         self.out_file = StringVar(value="join.html")
@@ -420,7 +420,7 @@ def print_tagged(tag, list):
 EVC_KEYS = ("EVC_DESC", "EVC")
 
 class Freqs(object):
-    def __init__(self, root, thold):
+    def __init__(self, root, evcs, thold):
         frame = LabelFrame(root, text="EVC frequencies")
         frame.grid(columnspan=2, sticky=(tkinter.EW, tkinter.NS))
         form = Form(frame)
@@ -428,8 +428,10 @@ class Freqs(object):
         
         self.file = add_file(form, FREQ_DEFAULT, text="Source file")
         
-        self.evcs = ScrolledTree(frame, columns=2)
-        form.add_field(self.evcs, text="Select EVCs", multiline=True)
+        self.evc_select = evcs
+        self.evc_list = ScrolledTree(frame, columns=2)
+        form.add_field(self.evc_list, text="Select EVCs", multiline=True)
+        self.select_binding = self.evc_list.bind_select(self.select)
         
         self.file.trace("w", self.update)
         
@@ -439,14 +441,43 @@ class Freqs(object):
         form.add_field(entry, text="Frequency threshold")
     
     def update(self, *_):
-        self.evcs.tree.delete(*self.evcs.tree.get_children())
+        self.evc_list.tree.delete(*self.evc_list.tree.get_children())
         if not self.file.get():
             return
         with open(self.file.get(), newline="") as file:
             evcs = set(tuple(row[key] for key in EVC_KEYS)
                 for row in csv.DictReader(file))
-        for (name, number) in sorted(evcs):
-            self.evcs.add(text=name, values=(number,))
+        
+        selection = list()
+        for evc in sorted(evcs):
+            (name, number) = evc
+            item = self.evc_list.add(text=name, values=(number,))
+            if any(value in self.evc_select for value in evc):
+                selection.append(item)
+        
+        if selection:
+            self.evc_list.unbind_select(self.select_binding)
+            self.evc_list.tree.focus(selection[0])
+            self.evc_list.tree.selection_set(tuple(selection))
+            
+            # Treeview.see() straight after adding items does not seem to
+            # work without at least update_idletasks(), and the <<Treeview
+            # Select>> event does not seem to be handled until update() is
+            # called.
+            self.evc_list.update()
+            
+            self.evc_list.tree.see(selection[-1])
+            self.evc_list.tree.see(selection[0])
+            
+            self.select_binding = self.evc_list.bind_select(self.select)
+    
+    def select(self, event):
+        self.evc_select = list()
+        for item in self.evc_list.tree.selection():
+            name = self.evc_list.tree.item(item, option="text")
+            self.evc_select.append(name)
+            number = self.evc_list.tree.item(item, option="values")
+            self.evc_select.extend(number)
     
     def validate_thold(self, value):
         if not value:
