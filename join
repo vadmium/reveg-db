@@ -408,7 +408,8 @@ class Freqs(object):
             text = self.evcs.tree.heading(column, option="text")
             text += self.evcs.space
             width = self.evcs.heading_font.measure(text)
-            self.evcs.tree.column(column, width=width)
+            minwidth = self.evcs.tree.column(column, option="minwidth")
+            self.evcs.tree.column(column, width=max(width, minwidth))
         
         if not self.file.get():
             return
