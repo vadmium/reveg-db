@@ -439,7 +439,7 @@ class Freqs(object):
         form.add_field(entry, text="Frequency threshold")
     
     def update(self, *_):
-        self.evcs.tree.set_children("")
+        self.evcs.tree.delete(*self.evcs.tree.get_children())
         if not self.file.get():
             return
         with open(self.file.get(), newline="") as file:
