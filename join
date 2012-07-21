@@ -5,7 +5,7 @@
 #@setlocal enableextensions & python -x %~f0 %* & goto :EOF
 #cmd shebang needs quotes for "%~f0"
 
-from sys import (argv, stdout)
+from sys import (argv, stdout, stderr)
 import csv
 from collections import (namedtuple, defaultdict)
 from xml.sax import saxutils
@@ -119,7 +119,7 @@ class Ui(object):
         self.grid = StringVar(value="{:03o}".format(grid))
         field = Frame(frame)
         entry = Entry(field, textvariable=self.grid, validate="all",
-            validatecommand=self.validate_grid)
+            validatecommand=ValidateCommand(self.root, self.validate_grid))
         entry.pack(side=tkinter.LEFT, expand=True, fill=tkinter.X)
         grid_button = partial(grid_menu, self.grid, field)
         grid_button = Button(field, text="Menu . . .", command=grid_button)
@@ -158,14 +158,7 @@ class Ui(object):
             quads=...,
         )
     
-    def validate_grid(self, *args, **kw):
-        try:
-            value = self.grid.get()
-        except ValueError as err:
-            print("grid", err)
-            return False
-        
-        print(repr(value), self.validate_grid, args, kw)
+    def validate_grid(self, value):
         return True
 
 FREQ_DEFAULT = "GoldfieldsBrgnlEVCSppFreq.xls.csv"
@@ -430,7 +423,7 @@ class Freqs(object):
         
         self.thold = DoubleVar(value=THOLD_DEFAULT)
         entry = Entry(frame, textvariable=self.thold, validate="all",
-            validatecommand=self.validate_thold)
+            validatecommand=ValidateCommand(root, self.validate_thold))
         form.add_field(entry, text="Frequency threshold")
     
     def update(self, *_):
@@ -443,14 +436,12 @@ class Freqs(object):
         for (name, number) in sorted(evcs):
             self.evcs.add(text=name, values=(number,))
     
-    def validate_thold(self, *args, **kw):
+    def validate_thold(self, value):
         try:
-            value = self.thold.get()
+            DoubleVar(value=value).get()
         except ValueError as err:
-            print("thold", err)
+            print(err, file=stderr)
             return False
-        
-        print(repr(value), self.validate_thold, args, kw)
         return True
 
 def add_file(form, default, **kw):
@@ -462,6 +453,15 @@ def add_file(form, default, **kw):
         side=tkinter.LEFT)
     form.add_field(field, **kw)
     return file
+
+def ValidateCommand(tk, func):
+    """Help get the new value for input validation
+    
+    Hinted by Michael Lange, "Validating an entry":
+    http://mail.python.org/pipermail/tkinter-discuss/2006-August/000863.html
+    """
+    
+    return (tk.register(func), "%P")
 
 class Record(object):
     def __init__(self, *args, **kw):
