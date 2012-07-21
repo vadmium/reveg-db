@@ -282,7 +282,26 @@ class Quads(object):
         self.file.set(self.list.tree.item(item, option="text"))
     
     def remove(self):
-        self.list.tree.delete(*self.list.tree.selection())
+        # Empty selection returns empty string?!
+        items = tuple(self.list.tree.selection())
+        
+        focus = self.list.tree.focus()
+        refocus = focus in items
+        if refocus:
+            new = focus
+            while new in items:
+                new = self.list.tree.next(new)
+            if not new:
+                new = focus
+                while new in items:
+                    new = self.list.tree.prev(new)
+            if not new:
+                refocus = False
+        
+        self.list.tree.delete(*items)
+        
+        if refocus:
+            self.list.tree.focus(new)
 
 def join(ca_file, grid, area, freq_file, evcs, freq_thold, quads):
     class Plant(Record):
