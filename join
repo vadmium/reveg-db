@@ -156,7 +156,7 @@ class Ui(object):
             freq_file=self.freqs.file.get(),
             evcs=self.freqs.get_evcs(),
             freq_thold=self.freqs.thold.get(),
-            quads=...,
+            quads=self.quads.get(),
         )
     
     def validate_grid(self, value):
@@ -302,6 +302,12 @@ class Quads(object):
         
         if refocus:
             self.list.tree.focus(new)
+    
+    def get(self):
+        quads = list()
+        for item in self.list.tree.get_children():
+            quads.append(self.list.tree.item(item, option="text"))
+        return quads
 
 def join(ca_file, grid, area, freq_file, evcs, freq_thold, quads):
     class Plant(Record):
