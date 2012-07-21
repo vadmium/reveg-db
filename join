@@ -148,6 +148,7 @@ class Ui(object):
     
     def join(self):
         (evcs, evc_names) = self.freqs.get_evcs()
+        (quad_files, quad_names) = self.quads.get()
         join(Toplevel(self.root),
             ca_file=self.ca_file.get() or None,
             grid=int(self.grid.get(), 8),
@@ -155,7 +156,7 @@ class Ui(object):
             freq_file=self.freqs.file.get() or None,
             evcs=evcs, evc_names=evc_names,
             freq_thold=self.freqs.thold.get(),
-            quads=self.quads.get(),
+            quads=quad_files, quad_names=quad_names,
         )
     
     def validate_grid(self, value):
@@ -253,6 +254,9 @@ class Quads(object):
             variable=self.file)
         form.add_field(entry, text="Source file")
         
+        self.name = StringVar()
+        form.add_field(Entry(frame, textvariable=self.name), text="Name")
+        
         buttons = Frame(frame)
         button = Button(buttons, text="Add", command=self.add)
         button.pack(side=tkinter.LEFT, expand=True)
@@ -260,13 +264,13 @@ class Quads(object):
         button.pack(side=tkinter.LEFT, expand=True)
         buttons.grid(columnspan=2, sticky=tkinter.EW)
         
-        self.list = ScrolledTree(frame)
+        self.list = ScrolledTree(frame, columns=2)
         self.list.grid(columnspan=2, sticky=tkinter.NSEW)
         frame.rowconfigure(self.list.grid_info()["row"], weight=1)
         self.list.bind_select(self.select)
     
     def add(self):
-        item = self.list.add(text=self.file.get())
+        item = self.list.add(text=self.file.get(), values=(self.name.get(),))
         self.list.tree.focus(item)
         self.list.tree.selection_set(item)
         
@@ -279,6 +283,8 @@ class Quads(object):
     def select(self, *_):
         (item,) = self.list.tree.selection()
         self.file.set(self.list.tree.item(item, option="text"))
+        (name,) = self.list.tree.item(item, option="values")
+        self.name.set(name)
     
     def remove(self):
         # Empty selection returns empty string?!
@@ -303,14 +309,19 @@ class Quads(object):
             self.list.tree.focus(new)
     
     def get(self):
-        quads = list()
+        files = list()
+        names = list()
         for item in self.list.tree.get_children():
-            quads.append(self.list.tree.item(item, option="text"))
-        return quads
+            files.append(self.list.tree.item(item, option="text"))
+            (name,) = self.list.tree.item(item, option="values")
+            names.append(name)
+        return (files, names)
 
 class join(object):
     def __init__(self, window, *,
-    ca_file, grid, area, freq_file, evcs, evc_names=None, freq_thold, quads):
+    ca_file, grid, area,
+    freq_file, evcs, evc_names=None, freq_thold,
+    quads, quad_names=None):
         for name in ("window, "
         "ca_file, grid, area, "
         "freq_file, evcs, freq_thold, "
@@ -323,6 +334,11 @@ class join(object):
         else:
             self.evc_names = evc_names
             self.evc_keys = ("EVC",)
+        
+        if quad_names is None:
+            self.quad_names = quads
+        else:
+            self.quad_names = quad_names
         
         self.window.bind("<Return>", self.save)
         
@@ -346,7 +362,10 @@ class join(object):
         output.tree.focus_set()
     
     def headings(self):
-        return ["name", "ex", "area", "grid"] + self.evc_names + self.quads
+        headings = ["name", "ex", "area", "grid"]
+        headings.extend(self.evc_names)
+        headings.extend(self.quad_names)
+        return headings
     
     def __iter__(self):
         class Plant(Record):
