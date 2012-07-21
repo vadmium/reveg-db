@@ -214,13 +214,13 @@ class Quads(object):
         form = Form(frame)
         root.rowconfigure(frame.grid_info()["row"], weight=1)
         
+        self.name = StringVar()
+        form.add_field(Entry(frame, textvariable=self.name), text="Name")
+        
         self.file = StringVar()
         entry = FileEntry(frame, dialogtype="tk_getOpenFile",
             variable=self.file)
         form.add_field(entry, text="Source file")
-        
-        self.name = StringVar()
-        form.add_field(Entry(frame, textvariable=self.name), text="Name")
         
         buttons = Frame(frame)
         button = Button(buttons, text="Add", command=self.add)
@@ -236,13 +236,13 @@ class Quads(object):
     def add(self):
         file = self.file.get()
         name = self.name.get()
-        self.list.tree.see(self.list.add(text=file, values=(name,)))
+        self.list.tree.see(self.list.add(text=name, values=(file,)))
     
     def select(self, *_):
         item = self.list.tree.item(self.list.tree.focus())
-        self.file.set(item["text"])
-        (name,) = item["values"]
-        self.name.set(name)
+        self.name.set(item["text"])
+        (file,) = item["values"]
+        self.file.set(file)
     
     def remove(self):
         self.list.tree.delete(*self.list.tree.selection())
@@ -414,7 +414,7 @@ class Freqs(object):
             evcs = set(tuple(row[key] for key in EVC_KEYS)
                 for row in csv.DictReader(file))
         for (name, number) in sorted(evcs):
-            self.evcs.add(text=name, values=(number,))
+            self.evcs.add(text=number, values=(name,))
 
 def add_file(form, default, **kw):
     field = Frame(form.master)
