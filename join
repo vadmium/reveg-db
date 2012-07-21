@@ -229,7 +229,7 @@ class Quads(object):
         button.pack(side=tkinter.LEFT, expand=True)
         buttons.grid(column=1, sticky=tkinter.EW)
         
-        self.list = ScrolledTree(frame, columns=2)
+        self.list = ScrolledTree(frame, headings=("Name", "File"))
         form.add_field(self.list, text="Select quadrats", multiline=True)
         self.list.bind_select(self.select)
     
@@ -393,7 +393,7 @@ class Freqs(object):
         
         self.file = add_file(form, FREQ_DEFAULT, text="Source file")
         
-        self.evcs = ScrolledTree(frame, columns=2)
+        self.evcs = ScrolledTree(frame, headings=("EVC", "EVC_DESC"))
         form.add_field(self.evcs, text="Select EVCs", multiline=True)
         
         self.file.trace("w", self.update)
@@ -404,8 +404,11 @@ class Freqs(object):
     
     def update(self, *_):
         self.evcs.tree.set_children("")
-        self.evcs.tree.column("#0", width=0)
-        self.evcs.tree.column(0, width=0)
+        for column in ("#0", 0):
+            text = self.evcs.tree.heading(column, option="text")
+            text += self.evcs.space
+            width = self.evcs.heading_font.measure(text)
+            self.evcs.tree.column(column, width=width)
         
         if not self.file.get():
             return
