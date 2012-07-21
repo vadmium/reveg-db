@@ -147,12 +147,13 @@ class Ui(object):
         ca_entry.focus_set()
     
     def join(self):
+        (evcs, evc_names) = self.freqs.get_evcs()
         join(Toplevel(self.root),
             ca_file=self.ca_file.get() or None,
             grid=int(self.grid.get(), 8),
             area=self.area.get(),
             freq_file=self.freqs.file.get() or None,
-            evcs=self.freqs.get_evcs(),
+            evcs=evcs, evc_names=evc_names,
             freq_thold=self.freqs.thold.get(),
             quads=self.quads.get(),
         )
@@ -309,12 +310,19 @@ class Quads(object):
 
 class join(object):
     def __init__(self, window, *,
-    ca_file, grid, area, freq_file, evcs, freq_thold, quads):
+    ca_file, grid, area, freq_file, evcs, evc_names=None, freq_thold, quads):
         for name in ("window, "
         "ca_file, grid, area, "
         "freq_file, evcs, freq_thold, "
         "quads").split(", "):
             setattr(self, name, vars()[name])
+        
+        if evc_names is None:
+            self.evc_names = evcs
+            self.evc_keys = EVC_KEYS
+        else:
+            self.evc_names = evc_names
+            self.evc_keys = ("EVC",)
         
         self.window.bind("<Return>", self.save)
         
@@ -338,7 +346,7 @@ class join(object):
         output.tree.focus_set()
     
     def headings(self):
-        return ["name", "ex", "area", "grid"] + self.evcs + self.quads
+        return ["name", "ex", "area", "grid"] + self.evc_names + self.quads
     
     def __iter__(self):
         class Plant(Record):
@@ -377,7 +385,7 @@ class join(object):
             
             with open(self.freq_file, newline="") as file:
                 for plant in csv.DictReader(file):
-                    for key in EVC_KEYS:
+                    for key in self.evc_keys:
                         evc = plant[key]
                         if evc not in self.evcs:
                             continue
@@ -551,10 +559,13 @@ class Freqs(object):
             self.saved_evcs.extend(number)
     
     def get_evcs(self):
-        evcs = list()
+        numbers = list()
+        names = list()
         for item in self.evc_list.tree.selection():
-            evcs.append(self.evc_list.tree.item(item, option="text"))
-        return evcs
+            (number,) = self.evc_list.tree.item(item, option="values")
+            numbers.append(number)
+            names.append(self.evc_list.tree.item(item, option="text"))
+        return (numbers, names)
     
     def validate_thold(self, value):
         if not value:
