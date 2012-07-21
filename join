@@ -118,7 +118,7 @@ class Ui(object):
         
         self.grid = StringVar(value="{:03o}".format(grid))
         field = Frame(frame)
-        entry = Entry(field, textvariable=self.grid, validate="all",
+        entry = Entry(field, textvariable=self.grid, validate="key",
             validatecommand=ValidateCommand(self.root, self.validate_grid))
         entry.pack(side=tkinter.LEFT, expand=True, fill=tkinter.X)
         grid_button = partial(grid_menu, self.grid, field)
@@ -159,7 +159,16 @@ class Ui(object):
         )
     
     def validate_grid(self, value):
-        return True
+        if not value:
+            return True
+        
+        try:
+            value = int(value, 8)
+        except ValueError as err:
+            print(err, file=stderr)
+            return False
+        
+        return 0 <= value < 0o1000
 
 FREQ_DEFAULT = "GoldfieldsBrgnlEVCSppFreq.xls.csv"
 CA_DEFAULT = "PLANT_CA.TXT"
@@ -422,7 +431,7 @@ class Freqs(object):
         self.file.trace("w", self.update)
         
         self.thold = DoubleVar(value=THOLD_DEFAULT)
-        entry = Entry(frame, textvariable=self.thold, validate="all",
+        entry = Entry(frame, textvariable=self.thold, validate="key",
             validatecommand=ValidateCommand(root, self.validate_thold))
         form.add_field(entry, text="Frequency threshold")
     
@@ -437,12 +446,16 @@ class Freqs(object):
             self.evcs.add(text=name, values=(number,))
     
     def validate_thold(self, value):
+        if not value:
+            return True
+        
         try:
-            DoubleVar(value=value).get()
+            value = DoubleVar(value=value).get()
         except ValueError as err:
             print(err, file=stderr)
             return False
-        return True
+        
+        return 0 <= value <= 1
 
 def add_file(form, default, **kw):
     field = Frame(form.master)
