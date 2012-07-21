@@ -150,6 +150,7 @@ class Ui(object):
         self.root.mainloop()
     
     def join(self):
+        window = Toplevel(self.root)
         join = Join(
             ca_file=self.ca_file.get(),
             grid=int(self.grid.get(), 8),
@@ -159,7 +160,13 @@ class Ui(object):
             freq_thold=self.freqs.thold.get(),
             quads=self.quads.get(),
         )
-        return join.write_html(join)
+        output = ScrolledTree(window, headings=join.headings())
+        output.pack()
+        entries = list()
+        for entry in join:
+            entries.append(entry)
+            output.add(text=entry[0], values=entry[1:])
+        return join.write_html(entries)
     
     def validate_grid(self, value):
         if not value:
