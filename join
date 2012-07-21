@@ -98,7 +98,7 @@ help\tDisplay this help""".format(**locals()))
         return
     
     if ca_file is None and freq_file is None and not quads:
-        Ui(grid=grid)
+        Ui(grid=grid, area=area, evcs=evcs, freq_thold=freq_thold)
     else:
         join(
             ca_file=ca_file, grid=grid, area=area,
@@ -107,7 +107,7 @@ help\tDisplay this help""".format(**locals()))
         )
 
 class Ui(object):
-    def __init__(self, grid=0o000):
+    def __init__(self, grid, area, evcs, freq_thold):
         self.root = Tk()
         self.root.title("Reveg DB")
         
@@ -126,10 +126,11 @@ class Ui(object):
         grid_button.pack(side=tkinter.LEFT)
         form.add_field(field, text="Highlight grid sections")
         
-        self.area = Entry(frame)
-        form.add_field(self.area, text="Select areas")
+        self.area = StringVar(value="".join(area))
+        entry = Entry(frame, textvariable=self.area)
+        form.add_field(entry, text="Select areas")
         
-        self.freqs = Freqs(self.root)
+        self.freqs = Freqs(self.root, freq_thold)
         self.quads = Quads(self.root)
         
         self.out_file = StringVar(value="join.html")
@@ -152,9 +153,9 @@ class Ui(object):
             ca_file=self.ca_file.get(),
             grid=int(self.grid.get(), 8),
             area=self.area.get(),
-            freq_file=self.freq_file.get(),
+            freq_file=self.freqs.file.get(),
             evcs=...,
-            freq_thold=self.freqs.freq_thold.get(),
+            freq_thold=self.freqs.thold.get(),
             quads=...,
         )
     
@@ -417,7 +418,7 @@ def print_tagged(tag, list):
 EVC_KEYS = ("EVC_DESC", "EVC")
 
 class Freqs(object):
-    def __init__(self, root):
+    def __init__(self, root, thold):
         frame = LabelFrame(root, text="EVC frequencies")
         frame.grid(columnspan=2, sticky=(tkinter.EW, tkinter.NS))
         form = Form(frame)
@@ -430,7 +431,7 @@ class Freqs(object):
         
         self.file.trace("w", self.update)
         
-        self.thold = DoubleVar(value=THOLD_DEFAULT)
+        self.thold = DoubleVar(value=thold)
         entry = Entry(frame, textvariable=self.thold, validate="key",
             validatecommand=ValidateCommand(root, self.validate_thold))
         form.add_field(entry, text="Frequency threshold")
