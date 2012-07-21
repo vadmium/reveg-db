@@ -100,7 +100,7 @@ help\tDisplay this help""".format(**locals()))
     if ca_file is None and freq_file is None and not quads:
         Ui(grid=grid, area=area, evcs=evcs, freq_thold=freq_thold)
     else:
-        join(
+        Join(
             ca_file=ca_file, grid=grid, area=area,
             freq_file=freq_file, evcs=evcs, freq_thold=freq_thold,
             quads=quads,
@@ -149,7 +149,7 @@ class Ui(object):
         self.root.mainloop()
     
     def join(self):
-        return join(
+        return Join(
             ca_file=self.ca_file.get(),
             grid=int(self.grid.get(), 8),
             area=self.area.get(),
@@ -309,7 +309,15 @@ class Quads(object):
             quads.append(self.list.tree.item(item, option="text"))
         return quads
 
-def join(ca_file, grid, area, freq_file, evcs, freq_thold, quads):
+class Join(object):
+    def __init__(self,
+    ca_file, grid, area, freq_file, evcs, freq_thold, quads):
+        for name in (
+        "ca_file, grid, area, "
+        "freq_file, evcs, freq_thold, "
+        "quads").split(", "):
+            setattr(self, name, vars()[name])
+        
         class Plant(Record):
             def __init__(self):
                 Record.__init__(self,
@@ -319,10 +327,10 @@ def join(ca_file, grid, area, freq_file, evcs, freq_thold, quads):
                 )
         plants = defaultdict(Plant)
         
-        if ca_file is not None:
+        if self.ca_file is not None:
             CaPlant = namedtuple("CaPlant",
                 "name, ex, common, family, fam_com, group, area, grid, note")
-            with open(ca_file, newline="") as file:
+            with open(self.ca_file, newline="") as file:
                 for plant in csv.reader(file):
                     if plant[0].startswith("\x1A"):
                         break
@@ -336,7 +344,7 @@ def join(ca_file, grid, area, freq_file, evcs, freq_thold, quads):
                     
                     plants[plant.name].ca = plant
         
-        if freq_file is not None:
+        if self.freq_file is not None:
             DIV_FERN = "2"
             DIV_MOSS = "5"
             FAM_MISTLETOE = "124"
@@ -344,11 +352,11 @@ def join(ca_file, grid, area, freq_file, evcs, freq_thold, quads):
             
             max_freq = dict()
             
-            with open(freq_file, newline="") as file:
+            with open(self.freq_file, newline="") as file:
                 for plant in csv.DictReader(file):
                     for key in EVC_KEYS:
                         evc = plant[key]
-                        if evc not in evcs:
+                        if evc not in self.evcs:
                             continue
                         
                         freq = int(plant["Frequency"])
@@ -370,7 +378,7 @@ def join(ca_file, grid, area, freq_file, evcs, freq_thold, quads):
         
         ViridansPlant = namedtuple("ViridansPlant",
             "arots, vrots, origin, name, common")
-        for quad_file in quads:
+        for quad_file in self.quads:
             with open(quad_file, newline="") as file:
                 file = csv.reader(file)
                 next(file)
@@ -397,41 +405,41 @@ def join(ca_file, grid, area, freq_file, evcs, freq_thold, quads):
         
         print("<html><body><table>")
         print("<tr><th>name</th><th>ex</th><th>area</th><th>grid</th>")
-        print_tagged("th", evcs)
-        print_tagged("th", quads)
+        print_tagged("th", self.evcs)
+        print_tagged("th", self.quads)
         print("</tr>")
         
         for name in sorted(plants.keys()):
             plant = plants[name]
             
             if plant.ca is None:
-                plant_ex = ""
-                plant_area = ""
-                plant_grid = ""
+                ex = ""
+                area = ""
+                grid = ""
             else:
-                plant_ex = plant.ca.ex
-                plant_area = "".join(a for a in plant.ca.area if a in area)
-                plant_grid = "{:03o}".format(int(plant.ca.grid, 8) & grid)
+                ex = plant.ca.ex
+                area = "".join(a for a in plant.ca.area if a in self.area)
+                grid = "{:03o}".format(int(plant.ca.grid, 8) & self.grid)
             
             rel = list()
             thold_met = False
-            for evc in evcs:
+            for evc in self.evcs:
                 try:
                     evc_plant = plant.evcs[evc]
                 except LookupError:
                     rel.append("")
                 else:
                     freq = evc_plant["Frequency"] / max_freq[evc]
-                    thold_met = thold_met or freq >= freq_thold
+                    thold_met = thold_met or freq >= self.freq_thold
                     rel.append("{:.2f}".format(freq))
             
-            inquads = tuple(quad in plant.quads for quad in quads)
+            inquads = tuple(quad in plant.quads for quad in self.quads)
             
-            if not plant_area and not thold_met and not any(inquads):
+            if not area and not thold_met and not any(inquads):
                 continue
             
             print("<tr>")
-            print_tagged("td", (name, plant_ex, plant_area, plant_grid))
+            print_tagged("td", (name, ex, area, grid))
             print_tagged("td", rel)
             print_tagged("td", ("Y" if q else "" for q in inquads))
             print("</tr>")
