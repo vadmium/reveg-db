@@ -154,7 +154,7 @@ class Ui(object):
             grid=int(self.grid.get(), 8),
             area=self.area.get(),
             freq_file=self.freqs.file.get(),
-            evcs=...,
+            evcs=self.freqs.get_evcs(),
             freq_thold=self.freqs.thold.get(),
             quads=...,
         )
@@ -428,7 +428,7 @@ class Freqs(object):
         
         self.file = add_file(form, FREQ_DEFAULT, text="Source file")
         
-        self.evc_select = evcs
+        self.saved_evcs = evcs
         self.evc_list = ScrolledTree(frame, columns=2)
         form.add_field(self.evc_list, text="Select EVCs", multiline=True)
         self.select_binding = self.evc_list.bind_select(self.select)
@@ -452,7 +452,7 @@ class Freqs(object):
         for evc in sorted(evcs):
             (name, number) = evc
             item = self.evc_list.add(text=name, values=(number,))
-            if any(value in self.evc_select for value in evc):
+            if any(value in self.saved_evcs for value in evc):
                 selection.append(item)
         
         if selection:
@@ -472,12 +472,18 @@ class Freqs(object):
             self.select_binding = self.evc_list.bind_select(self.select)
     
     def select(self, event):
-        self.evc_select = list()
+        self.saved_evcs = list()
         for item in self.evc_list.tree.selection():
             name = self.evc_list.tree.item(item, option="text")
-            self.evc_select.append(name)
+            self.saved_evcs.append(name)
             number = self.evc_list.tree.item(item, option="values")
-            self.evc_select.extend(number)
+            self.saved_evcs.extend(number)
+    
+    def get_evcs(self):
+        evcs = list()
+        for item in self.evc_list.tree.selection():
+            evcs.append(self.evc_list.tree.item(item, option="text"))
+        return evcs
     
     def validate_thold(self, value):
         if not value:
