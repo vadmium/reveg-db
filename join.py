@@ -198,6 +198,7 @@ class grid_menu(Toplevel):
             for (column, name) in enumerate(self.names[row]):
                 command = partial(self.update_var, row, column)
                 button = Checkbutton(frame, command=command, text=name)
+                button.state(("!alternate",))
                 button.grid(row=row, column=column, sticky=tkinter.NSEW)
                 
                 if not int(self.focus_lastfor()["takefocus"]):
