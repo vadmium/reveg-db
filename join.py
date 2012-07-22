@@ -340,6 +340,7 @@ class join(object):
         else:
             self.quad_names = quad_names
         
+        self.window.title("Plant list")
         self.window.bind("<Return>", self.save)
         
         output = ScrolledTree(self.window, headings=self.headings())
