@@ -634,4 +634,3 @@ if __name__ == "__main__":
 # Dianella aff longifolia 'Benambra
 # Lomandra multiflora ssp multiflor
 #How to handle origin, exotic, AROTS, VROTS merging or multiple columns
-#How to do Windows python scripts so they are easy to run
