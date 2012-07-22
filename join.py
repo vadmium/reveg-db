@@ -126,7 +126,7 @@ class Ui(object):
         self.grid = StringVar(value="{:03o}".format(grid))
         field = Frame(frame)
         entry = Entry(field, textvariable=self.grid, validate="key",
-            validatecommand=ValidateCommand(self.root, self.validate_grid))
+            validatecommand=ValidateCommand(self.root, validate_grid))
         entry.pack(side=tkinter.LEFT, expand=True, fill=tkinter.X)
         grid_button = partial(grid_menu, self.grid, field)
         grid_button = Button(field, text="Menu . . .", command=grid_button)
@@ -158,18 +158,18 @@ class Ui(object):
             freq_thold=self.freqs.thold.get(),
             quads=quad_files, quad_names=quad_names,
         )
+
+def validate_grid(value):
+    if not value:
+        return True
     
-    def validate_grid(self, value):
-        if not value:
-            return True
-        
-        try:
-            value = int(value, 8)
-        except ValueError as err:
-            print(err, file=stderr)
-            return False
-        
-        return 0 <= value < 0o1000
+    try:
+        value = int(value, 8)
+    except ValueError as err:
+        print(err, file=stderr)
+        return False
+    
+    return 0 <= value < 0o1000
 
 FREQ_DEFAULT = "GoldfieldsBrgnlEVCSppFreq.xls.csv"
 CA_DEFAULT = "PLANT_CA.TXT"
@@ -184,7 +184,9 @@ class grid_menu(Toplevel):
         self.bind("<Return>", self.destroy)
         self.bind("<Escape>", self.destroy)
         
-        Entry(self, textvariable=self.var).pack(fill=tkinter.X)
+        entry = Entry(self, textvariable=self.var, validate="key",
+            validatecommand=ValidateCommand(master, validate_grid))
+        entry.pack(fill=tkinter.X)
         
         frame = Frame(self)
         self.buttons = list()
