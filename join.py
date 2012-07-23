@@ -123,7 +123,7 @@ class Ui(object):
         (self.ca_file, ca_entry) = add_file(form, CA_DEFAULT,
             text="Source file")
         
-        self.grid = StringVar(value="{:03o}".format(grid))
+        self.grid = StringVar(value=format(grid, "03o"))
         field = Frame(frame)
         entry = Entry(field, textvariable=self.grid, validate="key",
             validatecommand=ValidateCommand(self.root, validate_grid))
@@ -230,7 +230,7 @@ class grid_menu(Toplevel):
             current |= value
         else:
             current &= ~value
-        self.var.set("{:03o}".format(current))
+        self.var.set(format(current, "03o"))
     
     def destroy(self, *_):
         self.var.trace_vdelete("w", self.var_cb)
@@ -471,7 +471,7 @@ class join(object):
                 common = plant.ca.common
                 ex = plant.ca.ex
                 area = "".join(a for a in plant.ca.area if a in self.area)
-                grid = "{:03o}".format(int(plant.ca.grid, 8) & self.grid)
+                grid = format(int(plant.ca.grid, 8) & self.grid, "03o")
             
             rel = list()
             thold_met = False
@@ -483,7 +483,7 @@ class join(object):
                 else:
                     freq = evc_plant["Frequency"] / max_freq[evc]
                     thold_met = thold_met or freq >= self.freq_thold
-                    rel.append("{:.2f}".format(freq))
+                    rel.append(format(freq, ".2f"))
             
             inquads = tuple(quad in plant.quads for quad in self.quads)
             
