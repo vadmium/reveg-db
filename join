@@ -160,12 +160,12 @@ class Ui(object):
             freq_thold=self.freqs.thold.get(),
             quads=self.quads.get(),
         )
-        output = ScrolledTree(window, headings=join.headings())
+        output = ScrolledTree(window, tree=False, headings=join.headings())
         output.pack()
         entries = list()
         for entry in join:
             entries.append(entry)
-            output.add(text=entry[0], values=entry[1:])
+            output.add(values=entry)
         return join.write_html(entries)
     
     def validate_grid(self, value):
@@ -270,13 +270,13 @@ class Quads(object):
         button.pack(side=tkinter.LEFT, expand=True)
         buttons.grid(columnspan=2, sticky=tkinter.EW)
         
-        self.list = ScrolledTree(frame, headings=("File",))
+        self.list = ScrolledTree(frame, tree=False, headings=("File",))
         self.list.grid(columnspan=2, sticky=tkinter.NSEW)
         frame.rowconfigure(self.list.grid_info()["row"], weight=1)
         self.list.bind_select(self.select)
     
     def add(self):
-        item = self.list.add(text=self.file.get())
+        item = self.list.add(values=(self.file.get(),))
         self.list.tree.focus(item)
         self.list.tree.selection_set(item)
         
@@ -288,7 +288,8 @@ class Quads(object):
     
     def select(self, *_):
         (item,) = self.list.tree.selection()
-        self.file.set(self.list.tree.item(item, option="text"))
+        (item,) = self.list.tree.item(item, option="values")
+        self.file.set(item)
     
     def remove(self):
         # Empty selection returns empty string?!
@@ -315,7 +316,8 @@ class Quads(object):
     def get(self):
         quads = list()
         for item in self.list.tree.get_children():
-            quads.append(self.list.tree.item(item, option="text"))
+            (item,) = self.list.tree.item(item, option="values")
+            quads.append(item)
         return quads
 
 class Join(object):
@@ -478,7 +480,8 @@ class Freqs(object):
         self.file = add_file(form, FREQ_DEFAULT, text="Source file")
         
         self.saved_evcs = evcs
-        self.evc_list = ScrolledTree(frame, headings=("EVC", "EVC_DESC"))
+        self.evc_list = ScrolledTree(frame, tree=False,
+            headings=("EVC", "EVC_DESC"))
         form.add_field(self.evc_list, text="Select EVCs", multiline=True)
         self.select_binding = self.evc_list.bind_select(self.select)
         
@@ -491,7 +494,7 @@ class Freqs(object):
     
     def update(self, *_):
         self.evc_list.tree.delete(*self.evc_list.tree.get_children())
-        for column in ("#0", 0):
+        for column in self.evc_list.columns():
             text = self.evc_list.tree.heading(column, option="text")
             text += self.evc_list.space
             width = self.evc_list.heading_font.measure(text)
@@ -507,7 +510,7 @@ class Freqs(object):
         
         selection = list()
         for (name, number) in sorted(evcs):
-            item = self.evc_list.add(text=number, values=(name,))
+            item = self.evc_list.add(values=(number, name))
             if name in self.saved_evcs or number in self.saved_evcs:
                 selection.append(item)
         
@@ -530,15 +533,13 @@ class Freqs(object):
     def select(self, event):
         self.saved_evcs = list()
         for item in self.evc_list.tree.selection():
-            number = self.evc_list.tree.item(item, option="text")
-            self.saved_evcs.append(number)
-            name = self.evc_list.tree.item(item, option="values")
-            self.saved_evcs.extend(name)
+            item = self.evc_list.tree.item(item, option="values")
+            self.saved_evcs.extend(item)
     
     def get_evcs(self):
         evcs = list()
         for item in self.evc_list.tree.selection():
-            (evc,) = self.evc_list.tree.item(item, option="values")
+            (_, evc) = self.evc_list.tree.item(item, option="values")
             evcs.append(evc)
         return evcs
     
