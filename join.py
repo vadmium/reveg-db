@@ -117,32 +117,34 @@ class Ui(object):
     def __init__(self, root, grid, area, evcs, freq_thold):
         self.root = root
         self.root.title("Reveg DB")
-        self.root.columnconfigure(0, weight=1)
+        form = Form(self.root, column=1)
         
-        frame = FormSection(self.root, text="Castlemaine plant list")
-        (self.ca_file, ca_entry) = add_file(frame.form, CA_DEFAULT,
+        frame = FormSection(form, text="Castlemaine plant list")
+        (self.ca_file, ca_entry) = add_file(form, CA_DEFAULT,
             text="Source file")
         
         self.grid = StringVar(value=format(grid, "03o"))
-        field = Frame(frame)
+        field = Frame(self.root)
         entry = Entry(field, textvariable=self.grid, validate="key",
             validatecommand=ValidateCommand(self.root, validate_grid))
         entry.pack(side=tkinter.LEFT, expand=True, fill=tkinter.X)
         grid_button = partial(grid_menu, self.grid, field)
         grid_button = Button(field, text="Menu . . .", command=grid_button)
         grid_button.pack(side=tkinter.LEFT)
-        frame.form.add_field(field, text="Highlight grid sections")
+        form.add_field(field, text="Highlight grid sections")
         
         self.area = StringVar(value="".join(area))
-        entry = Entry(frame, textvariable=self.area)
-        frame.form.add_field(entry, text="Select areas")
+        entry = Entry(self.root, textvariable=self.area)
+        form.add_field(entry, text="Select areas")
         
-        self.freqs = Freqs(self.root, evcs=evcs, thold=freq_thold)
-        self.quads = Quads(self.root)
+        frame.close()
+        
+        self.freqs = Freqs(form, evcs=evcs, thold=freq_thold)
+        self.quads = Quads(form)
         
         button = Button(self.root, text="Produce list . . .",
             command=self.join)
-        button.grid()
+        button.grid(columnspan=4)
         
         ca_entry.focus_set()
     
@@ -246,30 +248,32 @@ class grid_menu(Toplevel):
                     button.state(("!selected",))
 
 class Quads(object):
-    def __init__(self, root):
-        frame = FormSection(root, text="Viridans quadrats")
-        root.rowconfigure(frame.grid_info()["row"], weight=1)
+    def __init__(self, form):
+        frame = FormSection(form, text="Viridans quadrats")
         
         self.name = StringVar()
-        frame.form.add_field(Entry(frame, textvariable=self.name), text="Name")
+        entry = Entry(form.master, textvariable=self.name)
+        form.add_field(entry, text="Name")
         
         self.file = StringVar()
-        entry = FileEntry(frame, dialogtype="tk_getOpenFile",
+        entry = FileEntry(form.master, dialogtype="tk_getOpenFile",
             variable=self.file)
-        frame.form.add_field(entry, text="Source file")
+        form.add_field(entry, text="Source file")
         
-        buttons = Frame(frame)
+        buttons = Frame(form.master)
         button = Button(buttons, text="Add", command=self.add)
         button.pack(side=tkinter.LEFT, expand=True)
         button = Button(buttons, text="Remove", command=self.remove)
         button.pack(side=tkinter.LEFT, expand=True)
-        buttons.grid(columnspan=2, sticky=tkinter.EW)
+        buttons.grid(column=form.column, columnspan=2, sticky=tkinter.EW)
         
-        self.list = ScrolledTree(frame, tree=False,
+        self.list = ScrolledTree(form.master, tree=False,
             headings=("Name", "File",))
-        self.list.grid(columnspan=2, sticky=tkinter.NSEW)
-        frame.rowconfigure(self.list.grid_info()["row"], weight=1)
+        self.list.grid(column=form.column, columnspan=2, sticky=tkinter.NSEW)
+        form.master.rowconfigure(self.list.grid_info()["row"], weight=1)
         self.list.bind_select(self.select)
+        
+        frame.close()
     
     def add(self):
         item = self.list.add(values=(self.name.get(), self.file.get(),))
@@ -525,25 +529,26 @@ def print_tagged(tag, list, file):
 EVC_KEYS = ("EVC_DESC", "EVC")
 
 class Freqs(object):
-    def __init__(self, root, evcs, thold):
-        frame = FormSection(root, text="EVC frequencies")
-        root.rowconfigure(frame.grid_info()["row"], weight=1)
+    def __init__(self, form, evcs, thold):
+        frame = FormSection(form, text="EVC frequencies")
         
-        (self.file, _) = add_file(frame.form, FREQ_DEFAULT,
-            text="Source file")
+        (self.file, _) = add_file(form, FREQ_DEFAULT, text="Source file")
         
         self.saved_evcs = evcs
-        self.evc_list = ScrolledTree(frame, tree=False,
+        self.evc_list = ScrolledTree(form.master, tree=False,
             headings=("EVC", "EVC_DESC"))
-        frame.form.add_field(self.evc_list, text="Select EVCs", multiline=True)
+        form.add_field(self.evc_list, text="Select EVCs", multiline=True)
         self.select_binding = self.evc_list.bind_select(self.select)
         
         self.file.trace("w", self.update)
         
         self.thold = DoubleVar(value=thold)
-        entry = Entry(frame, textvariable=self.thold, validate="key",
-            validatecommand=ValidateCommand(root, self.validate_thold))
-        frame.form.add_field(entry, text="Frequency threshold")
+        vcmd = ValidateCommand(form.master, self.validate_thold)
+        entry = Entry(form.master, textvariable=self.thold, validate="key",
+            validatecommand=vcmd)
+        form.add_field(entry, text="Frequency threshold")
+        
+        frame.close()
     
     def update(self, *_):
         self.evc_list.tree.delete(*self.evc_list.tree.get_children())
@@ -621,12 +626,29 @@ def add_file(form, default, **kw):
     return (file, entry)
 
 class FormSection(LabelFrame):
-    def __init__(self, *args, **kw):
-        padding = font_size(nametofont("TkDefaultFont")["size"] / 2)
-        LabelFrame.__init__(self, padding=(padding, 0, padding, padding),
-            *args, **kw)
-        self.grid(sticky=tkinter.NSEW, padx=padding, pady=(0, padding))
-        self.form = Form(self)
+    def __init__(self, form, *args, **kw):
+        self.form = form
+        
+        font = nametofont("TkDefaultFont")
+        self.top = font.metrics("linespace")
+        self.side = font_size(font["size"])
+        padding = font_size(font["size"] / 2)
+        
+        LabelFrame.__init__(self, form.master, *args, **kw)
+        self.grid(column=form.column - 1, columnspan=4, sticky=tkinter.NSEW,
+            padx=padding, pady=(0, padding))
+    
+    def close(self):
+        # All fields returned from grid_info() are strings!
+        row = int(self.grid_info()["row"])
+        
+        master = self.form.master
+        (_, rows) = master.size()
+        self.grid(rowspan=rows + 1 - row)
+        master.rowconfigure(row, minsize=self.top)
+        master.columnconfigure(self.form.column - 1, minsize=self.side)
+        master.columnconfigure(self.form.column + 2, minsize=self.side)
+        master.rowconfigure(rows, minsize=self.side)
 
 def ValidateCommand(tk, func):
     """Help get the new value for input validation
