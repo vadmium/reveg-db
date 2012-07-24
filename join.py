@@ -252,13 +252,13 @@ class Quads(object):
         form = Form(frame)
         root.rowconfigure(frame.grid_info()["row"], weight=1)
         
+        self.name = StringVar()
+        form.add_field(Entry(frame, textvariable=self.name), text="Name")
+        
         self.file = StringVar()
         entry = FileEntry(frame, dialogtype="tk_getOpenFile",
             variable=self.file)
         form.add_field(entry, text="Source file")
-        
-        self.name = StringVar()
-        form.add_field(Entry(frame, textvariable=self.name), text="Name")
         
         buttons = Frame(frame)
         button = Button(buttons, text="Add", command=self.add)
@@ -267,13 +267,14 @@ class Quads(object):
         button.pack(side=tkinter.LEFT, expand=True)
         buttons.grid(columnspan=2, sticky=tkinter.EW)
         
-        self.list = ScrolledTree(frame, columns=2)
+        self.list = ScrolledTree(frame, tree=False,
+            headings=("Name", "File",))
         self.list.grid(columnspan=2, sticky=tkinter.NSEW)
         frame.rowconfigure(self.list.grid_info()["row"], weight=1)
         self.list.bind_select(self.select)
     
     def add(self):
-        item = self.list.add(text=self.file.get(), values=(self.name.get(),))
+        item = self.list.add(values=(self.name.get(), self.file.get(),))
         self.list.tree.focus(item)
         self.list.tree.selection_set(item)
         
@@ -285,9 +286,9 @@ class Quads(object):
     
     def select(self, *_):
         (item,) = self.list.tree.selection()
-        self.file.set(self.list.tree.item(item, option="text"))
-        (name,) = self.list.tree.item(item, option="values")
+        (name, file) = self.list.tree.item(item, option="values")
         self.name.set(name)
+        self.file.set(file)
     
     def remove(self):
         # Empty selection returns empty string?!
@@ -315,8 +316,8 @@ class Quads(object):
         files = list()
         names = list()
         for item in self.list.tree.get_children():
-            files.append(self.list.tree.item(item, option="text"))
-            (name,) = self.list.tree.item(item, option="values")
+            (name, file) = self.list.tree.item(item, option="values")
+            files.append(file)
             names.append(name)
         return (files, names)
 
@@ -346,14 +347,15 @@ class join(object):
         self.window.title("Plant list")
         self.window.bind("<Return>", self.save)
         
-        output = ScrolledTree(self.window, headings=self.headings())
+        headings = self.headings()
+        output = ScrolledTree(self.window, tree=False, headings=headings)
         output.grid(sticky=tkinter.NSEW)
         self.window.rowconfigure(0, weight=1)
         self.window.columnconfigure(0, weight=1)
         self.entries = list()
         for entry in self:
             self.entries.append(entry)
-            output.add(text=entry[0], values=entry[1:])
+            output.add(values=entry)
         
         buttons = Frame(self.window)
         buttons.grid()
@@ -534,7 +536,8 @@ class Freqs(object):
         (self.file, _) = add_file(form, FREQ_DEFAULT, text="Source file")
         
         self.saved_evcs = evcs
-        self.evc_list = ScrolledTree(frame, columns=2)
+        self.evc_list = ScrolledTree(frame, tree=False,
+            headings=("EVC", "EVC_DESC"))
         form.add_field(self.evc_list, text="Select EVCs", multiline=True)
         self.select_binding = self.evc_list.bind_select(self.select)
         
@@ -547,17 +550,24 @@ class Freqs(object):
     
     def update(self, *_):
         self.evc_list.tree.delete(*self.evc_list.tree.get_children())
+        for column in self.evc_list.columns():
+            text = self.evc_list.tree.heading(column, option="text")
+            text += self.evc_list.space
+            width = self.evc_list.heading_font.measure(text)
+            minwidth = self.evc_list.tree.column(column, option="minwidth")
+            self.evc_list.tree.column(column, width=max(width, minwidth))
+        
         if not self.file.get():
             return
+        
         with open(self.file.get(), newline="") as file:
             evcs = set(tuple(row[key] for key in EVC_KEYS)
                 for row in csv.DictReader(file))
         
         selection = list()
-        for evc in sorted(evcs):
-            (name, number) = evc
-            item = self.evc_list.add(text=name, values=(number,))
-            if any(value in self.saved_evcs for value in evc):
+        for (name, number) in sorted(evcs):
+            item = self.evc_list.add(values=(number, name))
+            if name in self.saved_evcs or number in self.saved_evcs:
                 selection.append(item)
         
         if selection:
@@ -579,18 +589,16 @@ class Freqs(object):
     def select(self, event):
         self.saved_evcs = list()
         for item in self.evc_list.tree.selection():
-            name = self.evc_list.tree.item(item, option="text")
-            self.saved_evcs.append(name)
-            number = self.evc_list.tree.item(item, option="values")
-            self.saved_evcs.extend(number)
+            item = self.evc_list.tree.item(item, option="values")
+            self.saved_evcs.extend(item)
     
     def get_evcs(self):
         numbers = list()
         names = list()
         for item in self.evc_list.tree.selection():
-            (number,) = self.evc_list.tree.item(item, option="values")
+            (number, name) = self.evc_list.tree.item(item, option="values")
             numbers.append(number)
-            names.append(self.evc_list.tree.item(item, option="text"))
+            names.append(name)
         return (numbers, names)
     
     def validate_thold(self, value):
