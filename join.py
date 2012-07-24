@@ -18,6 +18,8 @@ from functools import partial
 from tkinter import (StringVar, DoubleVar, Toplevel)
 from tkinter.tix import FileEntry
 from lib.tk import ScrolledTree
+from tkinter.font import nametofont
+from lib.tk import font_size
 from lib.tk import Form
 
 def main():
@@ -620,8 +622,10 @@ def add_file(form, default, **kw):
 
 class FormSection(LabelFrame):
     def __init__(self, *args, **kw):
-        LabelFrame.__init__(self, *args, **kw)
-        self.grid(sticky=tkinter.NSEW)
+        padding = font_size(nametofont("TkDefaultFont")["size"] / 2)
+        LabelFrame.__init__(self, padding=(padding, 0, padding, padding),
+            *args, **kw)
+        self.grid(sticky=tkinter.NSEW, padx=padding, pady=(0, padding))
         self.form = Form(self)
 
 def ValidateCommand(tk, func):
