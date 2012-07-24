@@ -117,10 +117,8 @@ class Ui(object):
         self.root.title("Reveg DB")
         self.root.columnconfigure(0, weight=1)
         
-        frame = LabelFrame(self.root, text="Castlemaine plant list")
-        frame.grid(sticky=tkinter.EW)
-        form = Form(frame)
-        (self.ca_file, ca_entry) = add_file(form, CA_DEFAULT,
+        frame = FormSection(self.root, text="Castlemaine plant list")
+        (self.ca_file, ca_entry) = add_file(frame.form, CA_DEFAULT,
             text="Source file")
         
         self.grid = StringVar(value=format(grid, "03o"))
@@ -131,11 +129,11 @@ class Ui(object):
         grid_button = partial(grid_menu, self.grid, field)
         grid_button = Button(field, text="Menu . . .", command=grid_button)
         grid_button.pack(side=tkinter.LEFT)
-        form.add_field(field, text="Highlight grid sections")
+        frame.form.add_field(field, text="Highlight grid sections")
         
         self.area = StringVar(value="".join(area))
         entry = Entry(frame, textvariable=self.area)
-        form.add_field(entry, text="Select areas")
+        frame.form.add_field(entry, text="Select areas")
         
         self.freqs = Freqs(self.root, evcs=evcs, thold=freq_thold)
         self.quads = Quads(self.root)
@@ -247,18 +245,16 @@ class grid_menu(Toplevel):
 
 class Quads(object):
     def __init__(self, root):
-        frame = LabelFrame(root, text="Viridans quadrats")
-        frame.grid(sticky=(tkinter.EW, tkinter.NS))
-        form = Form(frame)
+        frame = FormSection(root, text="Viridans quadrats")
         root.rowconfigure(frame.grid_info()["row"], weight=1)
         
         self.name = StringVar()
-        form.add_field(Entry(frame, textvariable=self.name), text="Name")
+        frame.form.add_field(Entry(frame, textvariable=self.name), text="Name")
         
         self.file = StringVar()
         entry = FileEntry(frame, dialogtype="tk_getOpenFile",
             variable=self.file)
-        form.add_field(entry, text="Source file")
+        frame.form.add_field(entry, text="Source file")
         
         buttons = Frame(frame)
         button = Button(buttons, text="Add", command=self.add)
@@ -528,17 +524,16 @@ EVC_KEYS = ("EVC_DESC", "EVC")
 
 class Freqs(object):
     def __init__(self, root, evcs, thold):
-        frame = LabelFrame(root, text="EVC frequencies")
-        frame.grid(sticky=(tkinter.EW, tkinter.NS))
-        form = Form(frame)
+        frame = FormSection(root, text="EVC frequencies")
         root.rowconfigure(frame.grid_info()["row"], weight=1)
         
-        (self.file, _) = add_file(form, FREQ_DEFAULT, text="Source file")
+        (self.file, _) = add_file(frame.form, FREQ_DEFAULT,
+            text="Source file")
         
         self.saved_evcs = evcs
         self.evc_list = ScrolledTree(frame, tree=False,
             headings=("EVC", "EVC_DESC"))
-        form.add_field(self.evc_list, text="Select EVCs", multiline=True)
+        frame.form.add_field(self.evc_list, text="Select EVCs", multiline=True)
         self.select_binding = self.evc_list.bind_select(self.select)
         
         self.file.trace("w", self.update)
@@ -546,7 +541,7 @@ class Freqs(object):
         self.thold = DoubleVar(value=thold)
         entry = Entry(frame, textvariable=self.thold, validate="key",
             validatecommand=ValidateCommand(root, self.validate_thold))
-        form.add_field(entry, text="Frequency threshold")
+        frame.form.add_field(entry, text="Frequency threshold")
     
     def update(self, *_):
         self.evc_list.tree.delete(*self.evc_list.tree.get_children())
@@ -622,6 +617,12 @@ def add_file(form, default, **kw):
         side=tkinter.LEFT)
     form.add_field(field, **kw)
     return (file, entry)
+
+class FormSection(LabelFrame):
+    def __init__(self, *args, **kw):
+        LabelFrame.__init__(self, *args, **kw)
+        self.grid(sticky=tkinter.NSEW)
+        self.form = Form(self)
 
 def ValidateCommand(tk, func):
     """Help get the new value for input validation
