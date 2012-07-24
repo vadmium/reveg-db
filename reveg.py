@@ -105,7 +105,7 @@ class Ui(object):
         self.gui = gui
         self.win = self.gui.Window(title="Reveg DB")
         
-        #~ frame = FormSection(form, text="Castlemaine plant list")
+        #~ frame = FormSection(form, text="&Castlemaine plant list")
         self.ca_file = add_file(self.gui, self.win,
             "Source file", CA_DEFAULT)
         
@@ -117,18 +117,18 @@ class Ui(object):
         #grid_button = partial(grid_menu, self.grid, field)
         #grid_button = Button(field, text="Menu . . .", command=grid_button)
         #grid_button.pack(side=tkinter.LEFT)
-        self.win.add_field("Highlight grid sections", None)
+        self.win.add_field("Highlight &grid sections", None)
         
         #self.area = StringVar(value="".join(area))
         #entry = Entry(self.root, textvariable=self.area)
-        self.win.add_field("Select areas", None)
+        self.win.add_field("Select &areas", None)
         
         #frame.close()
         
         self.freqs = Freqs(self.gui, self.win, evcs=evcs, thold=freq_thold)
         self.quads = Quads(self.win)
         
-        #button = Button(self.root, text="Produce list . . .",
+        #button = Button(self.root, text="&Produce list . . .",
         #    command=self.join)
         #button.grid(columnspan=4)
         
@@ -508,7 +508,7 @@ class Freqs(object):
 #        vcmd = ValidateCommand(form.master, self.validate_thold)
 #        entry = Entry(form.master, textvariable=self.thold, validate="key",
 #            validatecommand=vcmd)
-        win.add_field("Frequency threshold", None)
+        win.add_field("Frequency &threshold", None)
         
 #        frame.close()
     
