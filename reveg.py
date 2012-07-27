@@ -376,13 +376,11 @@ class join(object):
         return headings
     
     def __iter__(self):
-        class Plant(Record):
+        class Plant(object):
             def __init__(self):
-                Record.__init__(self,
-                    ca=None,
-                    evcs=dict(),
-                    quads=dict(),
-                )
+                self.ca = None
+                self.evcs = dict()
+                self.quads = dict()
         plants = defaultdict(Plant)
         
         if self.ca_file is not None:
@@ -658,10 +656,6 @@ def ValidateCommand(tk, func):
     """
     
     return (tk.register(func), "%P")
-
-class Record(object):
-    def __init__(self, *args, **kw):
-        self.__dict__.update(*args, **kw)
 
 if __name__ == "__main__":
     main()
