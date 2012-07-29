@@ -393,7 +393,7 @@ class join(object):
                     
                     plant = CaPlant._make(plant)
                     
-                    if (not plant.grid or plant.ex in tuple("*+") or
+                    if (plant.ex in tuple("*+") or
                     plant.group == "f" or
                     plant.family in ("Orchidaceae", "Loranthaceae")):
                         continue
@@ -471,7 +471,10 @@ class join(object):
                 common = plant.ca.common
                 ex = plant.ca.ex
                 area = "".join(a for a in plant.ca.area if a in self.area)
-                grid = format(int(plant.ca.grid, 8) & self.grid, "03o")
+                if plant.ca.grid:
+                    grid = format(int(plant.ca.grid, 8) & self.grid, "03o")
+                else:
+                    grid = plant.ca.grid
             
             rel = list()
             thold_met = False
