@@ -6,8 +6,7 @@
 #cmd shebang needs quotes for "%~f0"
 
 from sys import (argv, stderr)
-import csv
-from collections import (namedtuple, defaultdict)
+from collections import defaultdict
 from xml.sax import saxutils
 from tkinter.tix import Tk
 from tkinter.ttk import (Button, Entry, Frame, Label, LabelFrame,
@@ -21,6 +20,8 @@ from lib.tk import ScrolledTree
 from tkinter.font import nametofont
 from lib.tk import font_size
 from lib.tk import Form
+from readers import (CaPlantReader, FreqReader, QuadratReader)
+from contextlib import closing
 
 def main():
     help = False
@@ -384,20 +385,12 @@ class join(object):
         plants = defaultdict(Plant)
         
         if self.ca_file is not None:
-            CaPlant = namedtuple("CaPlant",
-                "name, ex, common, family, fam_com, group, area, grid, note")
-            with open(self.ca_file, newline="") as file:
-                for plant in csv.reader(file):
-                    if plant[0].startswith("\x1A"):
-                        break
-                    
-                    plant = CaPlant._make(plant)
-                    
+            with closing(CaPlantReader(self.ca_file)) as file:
+                for plant in file:
                     if (plant.ex in tuple("*+") or
                     plant.group == "f" or
                     plant.family in ("Orchidaceae", "Loranthaceae")):
                         continue
-                    
                     plants[plant.name].ca = plant
         
         if self.freq_file is not None:
@@ -408,14 +401,14 @@ class join(object):
             
             max_freq = dict()
             
-            with open(self.freq_file, newline="") as file:
-                for plant in csv.DictReader(file):
+            with closing(FreqReader(self.freq_file)) as file:
+                for plant in file:
                     for key in self.evc_keys:
                         evc = plant[key]
                         if evc not in self.evcs:
                             continue
                         
-                        freq = int(plant["Frequency"])
+                        freq = plant["Frequency"]
                         try:
                             max = max_freq[evc]
                         except LookupError:
@@ -429,34 +422,15 @@ class join(object):
                         plant["FAMILYNO"] in (FAM_ORCHID, FAM_MISTLETOE)):
                             continue
                         
-                        plant["Frequency"] = freq
                         plants[plant["NAME"]].evcs[evc] = plant
         
-        ViridansPlant = namedtuple("ViridansPlant",
-            "arots, vrots, origin, name, common")
         for quad_file in self.quads:
-            with open(quad_file, newline="") as file:
-                file = csv.reader(file)
-                next(file)
-                group = None
-                family = None
-                for row in file:
-                    if row[1] == "t1":
-                        (group, _, *_) = row
-                        family = None
+            with closing(QuadratReader(quad_file)) as file:
+                for plant in file:
+                    if (plant.origin == "*" or
+                    plant.group == "6: Ferns and Fern-like Plants" or
+                    plant.family in ("Orchidaceae", "Loranthaceae")):
                         continue
-                    elif row[1] == "t2":
-                        (family, _, *_) = row
-                        continue
-                    
-                    if (group == "6: Ferns and Fern-like Plants" or
-                    family in ("Orchidaceae", "Loranthaceae")):
-                        continue
-                    
-                    plant = ViridansPlant._make(row)
-                    if plant.origin == "*":
-                        continue
-                    
                     plants[plant.name].quads[quad_file] = plant
         
         for name in sorted(plants.keys()):
@@ -563,9 +537,9 @@ class Freqs(object):
         if not self.file.get():
             return
         
-        with open(self.file.get(), newline="") as file:
+        with closing(FreqReader(self.file.get())) as file:
             evcs = set(tuple(row[key] for key in EVC_KEYS)
-                for row in csv.DictReader(file))
+                for row in file)
         
         selection = list()
         for (name, number) in sorted(evcs):
