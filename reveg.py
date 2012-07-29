@@ -403,7 +403,7 @@ class join(object):
         if self.freq_file is not None:
             DIV_FERN = "2"
             DIV_MOSS = "5"
-            FAM_MISTLETOE = "124"
+            FAM_MISTLETOE = "100"
             FAM_ORCHID = "124"
             
             max_freq = dict()
