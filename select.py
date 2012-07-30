@@ -5,6 +5,7 @@ from lib.tk import ScrolledTree
 from sys import argv
 from readers import (CaPlantReader, FreqReader, QuadratReader)
 from contextlib import closing
+import tkinter
 
 def main(*, ca=(), freqs=(), quad=()):
     root = Tk()
@@ -23,7 +24,7 @@ def main(*, ca=(), freqs=(), quad=()):
         Record(heading="Note", width=3),
         Record(heading="SPECNUM", width=(4, ScrolledTree.FIGURE)),
     )
-    list.place(relheight=1, relwidth=1)
+    list.pack(fill=tkinter.BOTH, expand=True)
     list.focus_set()
     
     for file in ca:
