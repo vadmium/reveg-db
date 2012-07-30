@@ -22,6 +22,7 @@ from lib.tk import font_size
 from lib.tk import Form
 from readers import (CaPlantReader, FreqReader, QuadratReader)
 from contextlib import closing
+from lib import Record
 
 def main():
     help = False
@@ -269,7 +270,7 @@ class Quads(object):
         buttons.grid(column=form.column, columnspan=2, sticky=tkinter.EW)
         
         self.list = ScrolledTree(form.master, tree=False,
-            headings=("Name", "File",))
+            columns=("Name", "File"))
         self.list.grid(column=form.column, columnspan=2, sticky=tkinter.NSEW)
         form.master.rowconfigure(self.list.grid_info()["row"], weight=1)
         self.list.bind_select(self.select)
@@ -351,7 +352,7 @@ class join(object):
         self.window.bind("<Return>", self.save)
         
         headings = self.headings()
-        output = ScrolledTree(self.window, tree=False, headings=headings)
+        output = ScrolledTree(self.window, tree=False, columns=headings)
         output.grid(sticky=tkinter.NSEW)
         self.window.rowconfigure(0, weight=1)
         self.window.columnconfigure(0, weight=1)
@@ -510,8 +511,10 @@ class Freqs(object):
         (self.file, _) = add_file(form, FREQ_DEFAULT, text="Source file")
         
         self.saved_evcs = evcs
-        self.evc_list = ScrolledTree(form.master, tree=False,
-            headings=("EVC", "EVC_DESC"))
+        self.evc_list = ScrolledTree(form.master, tree=False, columns=(
+            Record(heading="EVC", width=(4, ScrolledTree.FIGURE)),
+            Record(heading="EVC_DESC", width=30),
+        ))
         form.add_field(self.evc_list, text="Select EVCs", multiline=True)
         self.select_binding = self.evc_list.bind_select(self.select)
         
@@ -527,12 +530,6 @@ class Freqs(object):
     
     def update(self, *_):
         self.evc_list.tree.delete(*self.evc_list.tree.get_children())
-        for column in self.evc_list.columns():
-            text = self.evc_list.tree.heading(column, option="text")
-            text += self.evc_list.space
-            width = self.evc_list.heading_font.measure(text)
-            minwidth = self.evc_list.tree.column(column, option="minwidth")
-            self.evc_list.tree.column(column, width=max(width, minwidth))
         
         if not self.file.get():
             return
