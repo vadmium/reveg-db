@@ -513,7 +513,7 @@ class Freqs(object):
         self.saved_evcs = evcs
         self.evc_list = ScrolledTree(form.master, tree=False, columns=(
             Record(heading="EVC", width=(4, ScrolledTree.FIGURE)),
-            Record(heading="EVC_DESC", width=30),
+            Record(heading="EVC_DESC", width=30, stretch=True),
         ))
         form.add_field(self.evc_list, text="Select EVCs", multiline=True)
         self.select_binding = self.evc_list.bind_select(self.select)
