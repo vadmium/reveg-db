@@ -3,6 +3,8 @@
 from tkinter import Tk
 from lib.tk import ScrolledTree
 from sys import argv
+from readers import (CaPlantReader, FreqReader, QuadratReader)
+from contextlib import closing
 
 def main(*, ca=(), freqs=(), quad=()):
     root = Tk()
