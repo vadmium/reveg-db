@@ -10,10 +10,19 @@ def main(*, ca=(), freqs=(), quad=()):
     root = Tk()
     root.title("Plant list")
     
-    list = ScrolledTree(root, tree=False, headings=
-        "Name, Authority, Common name, Origin, Family, Family, Family, "
-        "Division, Division, Note, SPECNUM".
-        split(", "))
+    list = ScrolledTree(root, tree=False, columns=(
+        Record(heading="Name", width=16),
+        Record(heading="Authority", width=6),
+        Record(heading="Common name", width=12),
+        Record(heading="Origin", width=1),
+        Record(heading="Family", width=(3, ScrolledTree.FIGURE)),
+        Record(heading="Family", width=6),
+        Record(heading="Family", width=6),
+        Record(heading="Division", width=(1, ScrolledTree.FIGURE)),
+        Record(heading="Division", width=6),
+        Record(heading="Note", width=3),
+        Record(heading="SPECNUM", width=(4, ScrolledTree.FIGURE)),
+    )
     list.place(relheight=1, relwidth=1)
     list.focus_set()
     
