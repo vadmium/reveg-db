@@ -20,7 +20,7 @@ from lib.tk import ScrolledTree
 from tkinter.font import nametofont
 from lib.tk import font_size
 from lib.tk import Form
-from readers import (CaPlantReader, FreqReader, QuadratReader)
+from db import (CaPlantReader, FreqReader, QuadratReader)
 from contextlib import closing
 from lib import Record
 
