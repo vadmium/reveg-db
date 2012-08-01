@@ -23,7 +23,7 @@ def QuadratReader(file):
         next(file)
         extra = Record()
         for row in file:
-            if row == ("Scientific Name", "Common Name"):
+            if tuple(row) == ("Scientific Name", "Common Name"):
                 continue
             if row[1] == "t1":
                 (extra.group, _, *_) = row
