@@ -3,23 +3,35 @@
 from tkinter import Tk
 from lib.tk import ScrolledTree
 from sys import argv
-from db import (CaPlantReader, FreqReader, QuadratReader)
+from db import (CaCsvReader, CplExcelReader, FreqReader, QuadratReader)
 from contextlib import closing
 from lib import Record
 import tkinter
 from db import (tuple_record, parse_fields)
 
-def main(*, ca=(), freqs=(), quad=()):
+def main(*, ca_csv=(), cpl_excel=(), freqs=(), quad=()):
     root = Tk()
     ui = Ui(root)
     
-    for file in ca:
-        with closing(CaPlantReader(file)) as file:
+    for file in ca_csv:
+        with closing(CaCsvReader(file)) as file:
             for plant in file:
                 ui.add(
                     origin=plant.ex, name=plant.name, common=plant.common,
                     family=plant.family, fam_com=plant.fam_com,
                     group=plant.group, note=plant.note
+                )
+    for file in cpl_excel:
+        with closing(CplExcelReader(file)) as file:
+            for plant in file:
+                family = Record(name=None, common=None)
+                family = getattr(plant, "family", family)
+                ui.add(
+                    origin=plant.ex,
+                    name=plant.name, common=plant.common,
+                    family=family.name, fam_com=family.common,
+                    group=getattr(plant, "group", None),
+                    note=plant.note,
                 )
     for file in freqs:
         with closing(FreqReader(file)) as file:

@@ -1,8 +1,10 @@
 import csv
 from collections import namedtuple
 from lib import Record
+from xlrd import open_workbook
+from xlrd import (XL_CELL_EMPTY, XL_CELL_BLANK)
 
-def CaPlantReader(file):
+def CaCsvReader(file):
     with open(file, newline="") as file:
         for plant in csv.reader(file):
             if plant[0].startswith("\x1A"):
@@ -10,6 +12,81 @@ def CaPlantReader(file):
             yield tuple_record(plant, """
                 name, ex, common, family, fam_com, group, area, grid, note,
             """, empty="""ex, area, note""")
+
+def CplExcelReader(file):
+    BLANK_TYPES = (XL_CELL_EMPTY, XL_CELL_BLANK)
+    HEADING_FIELDS = {
+        "r": "vrots",
+        "w": "weed",
+        "Grd": "grid",
+        "E": "ex",
+        "Ex": "ex",
+        "Name": "name",
+        "Common Name": "common",
+        "Area": "area",
+        "Notes": "note",
+    }
+    
+    with open_workbook(file, on_demand=True, ragged_rows=True) as book:
+        for i in range(book.nsheets):
+            sheet = book.sheet_by_index(i)
+            try:
+                extra = dict()
+                expect_headings = False
+                for row in range(sheet.nrows):
+                    types = sheet.row_types(row)
+                    group_col = None
+                    for (col, type) in enumerate(types):
+                        if type in BLANK_TYPES:
+                            continue
+                        if group_col is None:
+                            group_col = col
+                        else:
+                            break
+                    else:
+                        if group_col is not None:
+                            group = sheet.cell_value(row, group_col)
+                            extra.update(group=group)
+                            expect_headings = True
+                        continue
+                    if expect_headings:
+                        fields = dict()
+                        headings = sheet.row_values(row)
+                        for (col, heading) in enumerate(headings):
+                            try:
+                                field = HEADING_FIELDS[heading]
+                            except LookupError:
+                                continue
+                            fields[field] = col
+                        expect_headings = False
+                        continue
+                    
+                    for (col, type) in enumerate(types):
+                        if col == fields["name"] or col == fields["common"]:
+                            continue
+                        if type not in BLANK_TYPES:
+                            break
+                    else:
+                        extra.update(family=Record(
+                            name=sheet.cell_value(row, fields["name"]),
+                            common=sheet.cell_value(row, fields["common"]),
+                        ))
+                        continue
+                    
+                    plant = Record(extra)
+                    empty = parse_fields("""vrots, weed, ex, area, note""")
+                    for (name, col) in fields.items():
+                        if col >= len(types) or types[col] in BLANK_TYPES:
+                            if name in empty:
+                                setattr(plant, name, "")
+                            else:
+                                setattr(plant, name, None)
+                        else:
+                            setattr(plant, name, sheet.cell_value(row, col))
+                    yield plant
+            
+            finally:
+                book.unload_sheet(i)
 
 def FreqReader(file):
     with open(file, newline="") as file:

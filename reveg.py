@@ -20,7 +20,7 @@ from lib.tk import ScrolledTree
 from tkinter.font import nametofont
 from lib.tk import font_size
 from lib.tk import Form
-from db import (CaPlantReader, FreqReader, QuadratReader)
+from db import (CaCsvReader, FreqReader, QuadratReader)
 from contextlib import closing
 from lib import Record
 
@@ -386,7 +386,7 @@ class join(object):
         plants = defaultdict(Plant)
         
         if self.ca_file is not None:
-            with closing(CaPlantReader(self.ca_file)) as file:
+            with closing(CaCsvReader(self.ca_file)) as file:
                 for plant in file:
                     if (plant.ex in tuple("*+") or
                     plant.group == "f" or
