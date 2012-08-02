@@ -3,6 +3,7 @@ from collections import namedtuple
 from lib import Record
 from xlrd import open_workbook
 from xlrd import (XL_CELL_EMPTY, XL_CELL_BLANK)
+from numbers import Number
 
 def CaCsvReader(file):
     with open(file, newline="") as file:
@@ -46,7 +47,7 @@ def CplExcelReader(file):
                     else:
                         if group_col is not None:
                             group = sheet.cell_value(row, group_col)
-                            extra.update(group=group)
+                            extra.update(group=group.strip())
                             expect_headings = True
                         continue
                     if expect_headings:
@@ -61,28 +62,36 @@ def CplExcelReader(file):
                         expect_headings = False
                         continue
                     
+                    fam_fields = parse_fields("""name, common""")
                     for (col, type) in enumerate(types):
-                        if col == fields["name"] or col == fields["common"]:
+                        if col in (fields[field] for field in fam_fields):
                             continue
                         if type not in BLANK_TYPES:
                             break
                     else:
-                        extra.update(family=Record(
-                            name=sheet.cell_value(row, fields["name"]),
-                            common=sheet.cell_value(row, fields["common"]),
-                        ))
+                        family = Record()
+                        for name in fam_fields:
+                            value = sheet.cell_value(row, fields[name])
+                            setattr(family, name, value.strip())
+                        extra.update(family=family)
                         continue
                     
                     plant = Record(extra)
-                    empty = parse_fields("""vrots, weed, ex, area, note""")
                     for (name, col) in fields.items():
                         if col >= len(types) or types[col] in BLANK_TYPES:
-                            if name in empty:
-                                setattr(plant, name, "")
-                            else:
-                                setattr(plant, name, None)
+                            setattr(plant, name, None)
                         else:
-                            setattr(plant, name, sheet.cell_value(row, col))
+                            value = sheet.cell_value(row, col)
+                            if isinstance(value, Number):
+                                # Seen area=0 recorded as a number
+                                value = format(value, "g")
+                            else:
+                                value = value.strip()
+                            setattr(plant, name, value)
+                    empty = parse_fields("""vrots, weed, ex, area, note""")
+                    for name in empty:
+                        if getattr(plant, name) is None:
+                            setattr(plant, name, "")
                     yield plant
             
             finally:
