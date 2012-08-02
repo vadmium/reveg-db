@@ -3,13 +3,15 @@
 from tkinter import Tk
 from lib.tk import ScrolledTree
 from sys import argv
-from db import (CaCsvReader, CplExcelReader, FreqReader, QuadratReader)
+from db import (CaCsvReader, CplExcelReader)
+from db import (FreqCsvReader, FreqExcelReader)
+from db import QuadratReader
 from contextlib import closing
 from lib import Record
 import tkinter
 from db import (tuple_record, parse_fields)
 
-def main(*, ca_csv=(), cpl_excel=(), freqs=(), quad=()):
+def main(*, ca_csv=(), cpl_excel=(), freqs=(), freqs_csv=(), quad=()):
     root = Tk()
     ui = Ui(root)
     
@@ -33,17 +35,10 @@ def main(*, ca_csv=(), cpl_excel=(), freqs=(), quad=()):
                     group=getattr(plant, "group", None),
                     note=plant.note,
                 )
-    for file in freqs:
-        with closing(FreqReader(file)) as file:
-            for plant in file:
-                ui.add(
-                    origin=plant["ORIGIN"],
-                    name=plant["NAME"], auth=plant["AUTHORITY"],
-                    common=plant["COMMONNAME"],
-                    famnum=plant["FAMILYNO"], family=plant["FAMILYNAME"],
-                    divnum=plant["DIVISION"], group=plant["DivisionText"],
-                    specnum=plant["SPECNUM"]
-                )
+    
+    ui.add_freqs(FreqExcelReader, freqs)
+    ui.add_freqs(FreqCsvReader, freqs_csv)
+    
     for file in quad:
         with closing(QuadratReader(file)) as file:
             for plant in file:
@@ -107,6 +102,19 @@ class Ui(object):
                 setattr(current, field, value)
         self.list.tree.item(item,
             values=tuple(getattr(current, field) for field in fields))
+    
+    def add_freqs(self, Reader, files):
+        for file in files:
+            with closing(Reader(file)) as file:
+                for plant in file:
+                    self.add(
+                        origin=plant["ORIGIN"],
+                        name=plant["NAME"], auth=plant["AUTHORITY"],
+                        common=plant["COMMONNAME"],
+                        famnum=plant["FAMILYNO"], family=plant["FAMILYNAME"],
+                        divnum=plant["DIVISION"], group=plant["DivisionText"],
+                        specnum=plant["SPECNUM"]
+                    )
 
 from lib import run_main
 run_main(__name__)

@@ -20,7 +20,7 @@ from lib.tk import ScrolledTree
 from tkinter.font import nametofont
 from lib.tk import font_size
 from lib.tk import Form
-from db import (CaCsvReader, FreqReader, QuadratReader)
+from db import (CaCsvReader, FreqCsvReader, QuadratReader)
 from contextlib import closing
 from lib import Record
 
@@ -402,7 +402,7 @@ class join(object):
             
             max_freq = dict()
             
-            with closing(FreqReader(self.freq_file)) as file:
+            with closing(FreqCsvReader(self.freq_file)) as file:
                 for plant in file:
                     for key in self.evc_keys:
                         evc = plant[key]
@@ -534,7 +534,7 @@ class Freqs(object):
         if not self.file.get():
             return
         
-        with closing(FreqReader(self.file.get())) as file:
+        with closing(FreqCsvReader(self.file.get())) as file:
             evcs = set(tuple(row[key] for key in EVC_KEYS)
                 for row in file)
         

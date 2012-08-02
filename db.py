@@ -4,6 +4,7 @@ from lib import Record
 from xlrd import open_workbook
 from xlrd import (XL_CELL_EMPTY, XL_CELL_BLANK)
 from numbers import Number
+from contextlib import closing
 
 def CaCsvReader(file):
     with open(file, newline="") as file:
@@ -15,7 +16,6 @@ def CaCsvReader(file):
             """, empty="""ex, area, note""")
 
 def CplExcelReader(file):
-    BLANK_TYPES = (XL_CELL_EMPTY, XL_CELL_BLANK)
     HEADING_FIELDS = {
         "r": "vrots",
         "w": "weed",
@@ -28,17 +28,15 @@ def CplExcelReader(file):
         "Notes": "note",
     }
     
-    with open_workbook(file, on_demand=True, ragged_rows=True) as book:
-        for i in range(book.nsheets):
-            sheet = book.sheet_by_index(i)
-            try:
+    with closing(excel_sheets(file)) as file:
+        for sheet in file:
                 extra = dict()
                 expect_headings = False
                 for row in range(sheet.nrows):
                     types = sheet.row_types(row)
                     group_col = None
                     for (col, type) in enumerate(types):
-                        if type in BLANK_TYPES:
+                        if type in EXCEL_BLANKS:
                             continue
                         if group_col is None:
                             group_col = col
@@ -52,8 +50,7 @@ def CplExcelReader(file):
                         continue
                     if expect_headings:
                         fields = dict()
-                        headings = sheet.row_values(row)
-                        for (col, heading) in enumerate(headings):
+                        for (col, heading) in enumerate(sheet.row_values(row)):
                             try:
                                 field = HEADING_FIELDS[heading]
                             except LookupError:
@@ -66,7 +63,7 @@ def CplExcelReader(file):
                     for (col, type) in enumerate(types):
                         if col in (fields[field] for field in fam_fields):
                             continue
-                        if type not in BLANK_TYPES:
+                        if type not in EXCEL_BLANKS:
                             break
                     else:
                         family = Record()
@@ -78,31 +75,42 @@ def CplExcelReader(file):
                     
                     plant = Record(extra)
                     for (name, col) in fields.items():
-                        if col >= len(types) or types[col] in BLANK_TYPES:
-                            setattr(plant, name, None)
-                        else:
-                            value = sheet.cell_value(row, col)
-                            if isinstance(value, Number):
-                                # Seen area=0 recorded as a number
-                                value = format(value, "g")
-                            else:
-                                value = value.strip()
-                            setattr(plant, name, value)
-                    empty = parse_fields("""vrots, weed, ex, area, note""")
-                    for name in empty:
-                        if getattr(plant, name) is None:
-                            setattr(plant, name, "")
+                        value = excel_value(sheet, row, col)
+                        if isinstance(value, Number):
+                            # Seen area=0 recorded as a number
+                            value = format(value, "g")
+                        elif value is not None:
+                            value = value.strip()
+                        setattr(plant, name, value)
+                    convert_empty(plant.__dict__,
+                        """vrots, weed, ex, area, note""")
                     yield plant
-            
-            finally:
-                book.unload_sheet(i)
 
-def FreqReader(file):
+def FreqCsvReader(file):
     with open(file, newline="") as file:
         for plant in csv.DictReader(file):
-            default_none_skip(plant, """ORIGIN, AROTS, VROTS""")
-            plant["Frequency"] = int(plant["Frequency"])
+            convert_none_skip(plant, FREQS_EMPTIES)
+            freq_ints(plant)
             yield plant
+
+def FreqExcelReader(file):
+    with closing(excel_sheets(file)) as file:
+        for sheet in file:
+            fields = sheet.row_values(0)
+            for row in range(1, sheet.nrows):
+                plant = dict()
+                for (col, field) in enumerate(fields):
+                    plant[fields[col]] = excel_value(sheet, row, col)
+                convert_empty(plant, FREQS_EMPTIES)
+                freq_ints(plant)
+                yield plant
+
+FREQS_EMPTIES = """ORIGIN, AROTS, VROTS"""
+
+def freq_ints(record):
+    for field in parse_fields("""EVC, Frequency, SPECNUM"""):
+        record[field] = int(record[field])
+    record["BioregionNo"] = float(record["BioregionNo"])
 
 def QuadratReader(file):
     with open(file, newline="") as file:
@@ -126,7 +134,7 @@ def QuadratReader(file):
             record.__dict__.update(vars(extra))
             if not vars(extra):
                 empty = parse_fields(empty)
-                default_none(record.__dict__, empty)
+                convert_none(record.__dict__, empty)
                 
                 # Convert a single space to empty string
                 for name in empty:
@@ -135,18 +143,43 @@ def QuadratReader(file):
             
             yield record
 
+def excel_sheets(*args, **kw):
+    with open_workbook(*args, on_demand=True, ragged_rows=True, **kw) as (
+    book):
+        for i in range(book.nsheets):
+            try:
+                yield book.sheet_by_index(i)
+            finally:
+                book.unload_sheet(i)
+
+def excel_value(sheet, row, col):
+    try:
+        cell = sheet.cell(row, col)
+    except LookupError:
+        return None
+    if cell.ctype in EXCEL_BLANKS:
+        return None
+    return cell.value
+
+EXCEL_BLANKS = (XL_CELL_EMPTY, XL_CELL_BLANK)
+
+def convert_empty(record, fields):
+    for name in parse_fields(fields):
+        if record[name] is None:
+            record[name] = ""
+
 def tuple_record(record, fields, empty):
     record = Record(zip(parse_fields(fields), record))
-    default_none_skip(record.__dict__, empty)
+    convert_none_skip(record.__dict__, empty)
     return record
 
-def default_none_skip(record, skip):
+def convert_none_skip(record, skip):
     # Python 3.2.3 seems to have trouble with dict_keys() - tuple(). Bug?
     # Looks like it treats each tuple member as a separate set to subtract.
     fields = record.keys() - iter(parse_fields(skip))
-    default_none(record, fields)
+    convert_none(record, fields)
 
-def default_none(record, fields):
+def convert_none(record, fields):
     for field in fields:
         if not record[field]:
             record[field] = None
