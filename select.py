@@ -16,31 +16,31 @@ def main(*, ca=(), freqs=(), quad=()):
     for file in ca:
         with closing(CaPlantReader(file)) as file:
             for plant in file:
-                ui.add(Record(
+                ui.add(
                     origin=plant.ex, name=plant.name, common=plant.common,
                     family=plant.family, fam_com=plant.fam_com,
                     group=plant.group, note=plant.note
-                ))
+                )
     for file in freqs:
         with closing(FreqReader(file)) as file:
             for plant in file:
-                ui.add(Record(
+                ui.add(
                     origin=plant["ORIGIN"],
                     name=plant["NAME"], auth=plant["AUTHORITY"],
                     common=plant["COMMONNAME"],
                     famnum=plant["FAMILYNO"], family=plant["FAMILYNAME"],
                     divnum=plant["DIVISION"], group=plant["DivisionText"],
                     specnum=plant["SPECNUM"]
-                ))
+                )
     for file in quad:
         with closing(QuadratReader(file)) as file:
             for plant in file:
-                ui.add(Record(
+                ui.add(
                     origin=plant.origin,
                     name=plant.name, common=plant.common,
                     family=getattr(plant, "family", None),
                     group=getattr(plant, "group", None)
-                ))
+                )
     
     root.mainloop()
 
@@ -66,11 +66,12 @@ class Ui(object):
         
         self.items = dict()
     
-    def add(self, record):
+    def add(self, **kw):
         fields = """
             origin, name, auth, common, famnum, family, fam_com,
             divnum, group, note, specnum
         """
+        record = Record(kw)
         
         try:
             item = self.items[record.name]
