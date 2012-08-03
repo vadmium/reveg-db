@@ -1,28 +1,13 @@
 #! /usr/bin/env python3
 
-#The incantation for making a Python script executable under WinNT is to give the file an extension of .cmd and add the following as the first line:
-
-#@setlocal enableextensions & python -x %~f0 %* & goto :EOF
-#cmd shebang needs quotes for "%~f0"
-
 from sys import (argv, stderr)
 from collections import defaultdict
 from xml.sax import saxutils
-from tkinter.tix import Tk
-from tkinter.ttk import (Button, Entry, Frame, Label, LabelFrame,
-    Checkbutton)
-import tkinter
-from tkinter.filedialog import asksaveasfile
-from functools import partial
-from tkinter import (StringVar, DoubleVar, Toplevel)
-from tkinter.tix import FileEntry
-from lib.tk import ScrolledTree
-from tkinter.font import nametofont
-from lib.tk import font_size
-from lib.tk import Form
+#~ from functools import partial
 from readers import (CaPlantReader, FreqReader, QuadratReader)
 from contextlib import closing
 from lib import Record
+import guis
 
 def main():
     help = False
@@ -102,58 +87,57 @@ thold <threshold>
 help\tDisplay this help""".format(**locals()))
         return
     
-    root = Tk()
+    gui = guis.pick()
     
     if ca_file is None and freq_file is None and not quads:
-        Ui(root, grid=grid, area=area, evcs=evcs, freq_thold=freq_thold)
+        Ui(gui, grid=grid, area=area, evcs=evcs, freq_thold=freq_thold)
     else:
-        join(root,
+        join(gui,
             ca_file=ca_file, grid=grid, area=area,
             freq_file=freq_file, evcs=evcs, freq_thold=freq_thold,
             quads=quads,
         )
     
-    root.mainloop()
+    gui.msg_loop()
 
 class Ui(object):
-    def __init__(self, root, grid, area, evcs, freq_thold):
-        self.root = root
-        self.root.title("Reveg DB")
-        form = Form(self.root, column=1)
+    def __init__(self, gui, grid, area, evcs, freq_thold):
+        self.gui = gui
+        self.win = self.gui.Window(title="Reveg DB")
         
-        frame = FormSection(form, text="Castlemaine plant list")
-        (self.ca_file, ca_entry) = add_file(form, CA_DEFAULT,
-            text="Source file")
+        #~ frame = FormSection(form, text="Castlemaine plant list")
+        self.ca_file = add_file(self.gui, self.win,
+            "Source file", CA_DEFAULT)
         
-        self.grid = StringVar(value=format(grid, "03o"))
-        field = Frame(self.root)
-        entry = Entry(field, textvariable=self.grid, validate="key",
-            validatecommand=ValidateCommand(self.root, validate_grid))
-        entry.pack(side=tkinter.LEFT, expand=True, fill=tkinter.X)
-        grid_button = partial(grid_menu, self.grid, field)
-        grid_button = Button(field, text="Menu . . .", command=grid_button)
-        grid_button.pack(side=tkinter.LEFT)
-        form.add_field(field, text="Highlight grid sections")
+        #self.grid = StringVar(value=format(grid, "03o"))
+        #field = Frame(self.root)
+        #entry = Entry(field, textvariable=self.grid, validate="key",
+        #    validatecommand=ValidateCommand(self.root, validate_grid))
+        #entry.pack(side=tkinter.LEFT, expand=True, fill=tkinter.X)
+        #grid_button = partial(grid_menu, self.grid, field)
+        #grid_button = Button(field, text="Menu . . .", command=grid_button)
+        #grid_button.pack(side=tkinter.LEFT)
+        self.win.add_field("Highlight grid sections", None)
         
-        self.area = StringVar(value="".join(area))
-        entry = Entry(self.root, textvariable=self.area)
-        form.add_field(entry, text="Select areas")
+        #self.area = StringVar(value="".join(area))
+        #entry = Entry(self.root, textvariable=self.area)
+        self.win.add_field("Select areas", None)
         
-        frame.close()
+        #frame.close()
         
-        self.freqs = Freqs(form, evcs=evcs, thold=freq_thold)
-        self.quads = Quads(form)
+        self.freqs = Freqs(self.gui, self.win, evcs=evcs, thold=freq_thold)
+        self.quads = Quads(self.win)
         
-        button = Button(self.root, text="Produce list . . .",
-            command=self.join)
-        button.grid(columnspan=4)
+        #button = Button(self.root, text="Produce list . . .",
+        #    command=self.join)
+        #button.grid(columnspan=4)
         
-        ca_entry.focus_set()
+        self.win.show()
     
     def join(self):
         (evcs, evc_names) = self.freqs.get_evcs()
         (quad_files, quad_names) = self.quads.get()
-        join(Toplevel(self.root),
+        join(self.gui, self.win,
             ca_file=self.ca_file.get() or None,
             grid=int(self.grid.get(), 8),
             area=self.area.get(),
@@ -179,103 +163,103 @@ FREQ_DEFAULT = "GoldfieldsBrgnlEVCSppFreq.xls.csv"
 CA_DEFAULT = "PLANT_CA.TXT"
 THOLD_DEFAULT = 0.3
 
-class grid_menu(Toplevel):
-    def __init__(self, grid, master):
-        self.var = grid
-        
-        Toplevel.__init__(self, master)
-        self.title("Grid sections")
-        self.bind("<Return>", self.destroy)
-        self.bind("<Escape>", self.destroy)
-        
-        entry = Entry(self, textvariable=self.var, validate="key",
-            validatecommand=ValidateCommand(master, validate_grid))
-        entry.pack(fill=tkinter.X)
-        
-        frame = Frame(self)
-        self.buttons = list()
-        for column in range(3):
-            frame.columnconfigure(column, weight=1)
-        
-        for row in range(3):
-            frame.rowconfigure(row, weight=1)
-            
-            buttons = list()
-            for (column, name) in enumerate(self.names[row]):
-                command = partial(self.update_var, row, column)
-                button = Checkbutton(frame, command=command, text=name)
-                button.state(("!alternate",))
-                button.grid(row=row, column=column, sticky=tkinter.NSEW)
-                
-                if not int(self.focus_lastfor()["takefocus"]):
-                    button.focus_set()
-                buttons.append(button)
-            self.buttons.append(buttons)
-        
-        frame.pack(fill=tkinter.BOTH, expand=True)
-        
-        self.var_cb = self.var.trace_variable("w", self.update_buttons)
-        self.update_buttons()
-        
-        button = Button(self, text="Close", command=self.destroy, default="active")
-        button.pack(side=tkinter.BOTTOM)
-    
-    names = (
-        ("M46", "M47", "M48"),
-        ("N1", "N2", "N3"),
-        ("N10", "N11", "N12"),
-    )
-    
-    def update_var(self, row, column):
-        current = int(self.var.get(), 8)
-        value = 0o100 << row >> (column * 3)
-        button = self.buttons[row][column]
-        if button.instate(("selected",)):
-            current |= value
-        else:
-            current &= ~value
-        self.var.set(format(current, "03o"))
-    
-    def destroy(self, *_):
-        self.var.trace_vdelete("w", self.var_cb)
-        return Toplevel.destroy(self)
-    
-    def update_buttons(self, *_):
-        value = int(self.var.get(), 8)
-        for (row, buttons) in enumerate(self.buttons):
-            for (column, button) in enumerate(buttons):
-                if value & 0o100 << row >> (column * 3):
-                    button.state(("selected",))
-                else:
-                    button.state(("!selected",))
+#class grid_menu(Toplevel):
+#    def __init__(self, grid, master):
+#        self.var = grid
+#        
+#        Toplevel.__init__(self, master)
+#        self.title("Grid sections")
+#        self.bind("<Return>", self.destroy)
+#        self.bind("<Escape>", self.destroy)
+#        
+#        entry = Entry(self, textvariable=self.var, validate="key",
+#            validatecommand=ValidateCommand(master, validate_grid))
+#        entry.pack(fill=tkinter.X)
+#        
+#        frame = Frame(self)
+#        self.buttons = list()
+#        for column in range(3):
+#            frame.columnconfigure(column, weight=1)
+#        
+#        for row in range(3):
+#            frame.rowconfigure(row, weight=1)
+#            
+#            buttons = list()
+#            for (column, name) in enumerate(self.names[row]):
+#                command = partial(self.update_var, row, column)
+#                button = Checkbutton(frame, command=command, text=name)
+#                button.state(("!alternate",))
+#                button.grid(row=row, column=column, sticky=tkinter.NSEW)
+#                
+#                if not int(self.focus_lastfor()["takefocus"]):
+#                    button.focus_set()
+#                buttons.append(button)
+#            self.buttons.append(buttons)
+#        
+#        frame.pack(fill=tkinter.BOTH, expand=True)
+#        
+#        self.var_cb = self.var.trace_variable("w", self.update_buttons)
+#        self.update_buttons()
+#        
+#        button = Button(self, text="Close", command=self.destroy, default="active")
+#        button.pack(side=tkinter.BOTTOM)
+#    
+#    names = (
+#        ("M46", "M47", "M48"),
+#        ("N1", "N2", "N3"),
+#        ("N10", "N11", "N12"),
+#    )
+#    
+#    def update_var(self, row, column):
+#        current = int(self.var.get(), 8)
+#        value = 0o100 << row >> (column * 3)
+#        button = self.buttons[row][column]
+#        if button.instate(("selected",)):
+#            current |= value
+#        else:
+#            current &= ~value
+#        self.var.set(format(current, "03o"))
+#    
+#    def destroy(self, *_):
+#        self.var.trace_vdelete("w", self.var_cb)
+#        return Toplevel.destroy(self)
+#    
+#    def update_buttons(self, *_):
+#        value = int(self.var.get(), 8)
+#        for (row, buttons) in enumerate(self.buttons):
+#            for (column, button) in enumerate(buttons):
+#                if value & 0o100 << row >> (column * 3):
+#                    button.state(("selected",))
+#                else:
+#                    button.state(("!selected",))
 
 class Quads(object):
-    def __init__(self, form):
-        frame = FormSection(form, text="Viridans quadrats")
+    def __init__(self, win):
+#        frame = FormSection(form, text="Viridans quadrats")
         
-        self.name = StringVar()
-        entry = Entry(form.master, textvariable=self.name)
-        form.add_field(entry, text="Name")
+#        self.name = StringVar()
+#        entry = Entry(form.master, textvariable=self.name)
+        win.add_field("Name", None)
         
-        self.file = StringVar()
-        entry = FileEntry(form.master, dialogtype="tk_getOpenFile",
-            variable=self.file)
-        form.add_field(entry, text="Source file")
+#        self.file = StringVar()
+#        entry = FileEntry(form.master, dialogtype="tk_getOpenFile",
+#            variable=self.file)
+        win.add_field("Source file", None)
         
-        buttons = Frame(form.master)
-        button = Button(buttons, text="Add", command=self.add)
-        button.pack(side=tkinter.LEFT, expand=True)
-        button = Button(buttons, text="Remove", command=self.remove)
-        button.pack(side=tkinter.LEFT, expand=True)
-        buttons.grid(column=form.column, columnspan=2, sticky=tkinter.EW)
+#        buttons = Frame(form.master)
+#        button = Button(buttons, text="Add", command=self.add)
+#        button.pack(side=tkinter.LEFT, expand=True)
+#        button = Button(buttons, text="Remove", command=self.remove)
+#        button.pack(side=tkinter.LEFT, expand=True)
+#        buttons.grid(column=form.column, columnspan=2, sticky=tkinter.EW)
         
-        self.list = ScrolledTree(form.master, tree=False,
-            columns=("Name", "File"))
-        self.list.grid(column=form.column, columnspan=2, sticky=tkinter.NSEW)
-        form.master.rowconfigure(self.list.grid_info()["row"], weight=1)
-        self.list.bind_select(self.select)
+#        self.list = ScrolledTree(form.master, tree=False,
+#            columns=("Name", "File"))
+#        self.list.grid(column=form.column, columnspan=2, sticky=tkinter.NSEW)
+#        form.master.rowconfigure(self.list.grid_info()["row"], weight=1)
+#        self.list.bind_select(self.select)
         
-        frame.close()
+#        frame.close()
     
     def add(self):
         item = self.list.add(values=(self.name.get(), self.file.get(),))
@@ -326,11 +310,11 @@ class Quads(object):
         return (files, names)
 
 class join(object):
-    def __init__(self, window, *,
+    def __init__(self, gui, *,
     ca_file, grid, area,
     freq_file, evcs, evc_names=None, freq_thold,
     quads, quad_names=None):
-        for name in ("window, "
+        for name in (
         "ca_file, grid, area, "
         "freq_file, evcs, freq_thold, "
         "quads").split(", "):
@@ -348,7 +332,7 @@ class join(object):
         else:
             self.quad_names = quad_names
         
-        self.window.title("Plant list")
+        self.window = gui.Window(..., title="Plant list")
         self.window.bind("<Return>", self.save)
         
         headings = self.headings()
@@ -505,28 +489,28 @@ def print_tagged(tag, list, file):
 EVC_KEYS = ("EVC_DESC", "EVC")
 
 class Freqs(object):
-    def __init__(self, form, evcs, thold):
-        frame = FormSection(form, text="EVC frequencies")
+    def __init__(self, gui, win, evcs, thold):
+#        frame = FormSection(form, text="EVC frequencies")
         
-        (self.file, _) = add_file(form, FREQ_DEFAULT, text="Source file")
+        self.file = add_file(gui, win, "Source file", FREQ_DEFAULT)
         
         self.saved_evcs = evcs
-        self.evc_list = ScrolledTree(form.master, tree=False, columns=(
-            Record(heading="EVC", width=(4, ScrolledTree.FIGURE)),
-            Record(heading="EVC_DESC", width=30, stretch=True),
-        ))
-        form.add_field(self.evc_list, text="Select EVCs", multiline=True)
-        self.select_binding = self.evc_list.bind_select(self.select)
+#        self.evc_list = ScrolledTree(form.master, tree=False, columns=(
+#            Record(heading="EVC", width=(4, ScrolledTree.FIGURE)),
+#            Record(heading="EVC_DESC", width=30, stretch=True),
+#        ))
+#        form.add_field(self.evc_list, text="Select EVCs", multiline=True)
+#        self.select_binding = self.evc_list.bind_select(self.select)
         
-        self.file.trace("w", self.update)
+#        self.file.trace("w", self.update)
         
-        self.thold = DoubleVar(value=thold)
-        vcmd = ValidateCommand(form.master, self.validate_thold)
-        entry = Entry(form.master, textvariable=self.thold, validate="key",
-            validatecommand=vcmd)
-        form.add_field(entry, text="Frequency threshold")
+#        self.thold = DoubleVar(value=thold)
+#        vcmd = ValidateCommand(form.master, self.validate_thold)
+#        entry = Entry(form.master, textvariable=self.thold, validate="key",
+#            validatecommand=vcmd)
+        win.add_field("Frequency threshold", None)
         
-        frame.close()
+#        frame.close()
     
     def update(self, *_):
         self.evc_list.tree.delete(*self.evc_list.tree.get_children())
@@ -587,40 +571,16 @@ class Freqs(object):
         
         return 0 <= value <= 1
 
-def add_file(form, default, **kw):
-    field = Frame(form.master)
-    file = StringVar(value=default)
-    entry = FileEntry(field, dialogtype="tk_getOpenFile", variable=file)
-    entry.pack(side=tkinter.LEFT, expand=True, fill=tkinter.X)
-    Button(field, text="Delete", command=partial(file.set, "")).pack(
-        side=tkinter.LEFT)
-    form.add_field(field, **kw)
-    return (file, entry)
-
-class FormSection(LabelFrame):
-    def __init__(self, form, *args, **kw):
-        self.form = form
-        
-        font = nametofont("TkDefaultFont")
-        self.top = font.metrics("linespace")
-        self.side = font_size(font["size"])
-        padding = font_size(font["size"] / 2)
-        
-        LabelFrame.__init__(self, form.master, *args, **kw)
-        self.grid(column=form.column - 1, columnspan=4, sticky=tkinter.NSEW,
-            padx=padding, pady=(0, padding))
-    
-    def close(self):
-        # All fields returned from grid_info() are strings!
-        row = int(self.grid_info()["row"])
-        
-        master = self.form.master
-        (_, rows) = master.size()
-        self.grid(rowspan=rows + 1 - row)
-        master.rowconfigure(row, minsize=self.top)
-        master.columnconfigure(self.form.column - 1, minsize=self.side)
-        master.columnconfigure(self.form.column + 2, minsize=self.side)
-        master.rowconfigure(rows, minsize=self.side)
+def add_file(gui, win, label, default, **kw):
+    #~ field = Frame(form.master)
+    #~ file = StringVar(value=default)
+    #~ entry = FileEntry(field, dialogtype="tk_getOpenFile", variable=file)
+    entry = default
+    #~ entry.pack(side=tkinter.LEFT, expand=True, fill=tkinter.X)
+    #~ Button(field, text="Delete", command=partial(file.set, "")).pack(
+        #~ side=tkinter.LEFT)
+    win.add_field(label, entry, **kw)
+    return entry
 
 def ValidateCommand(tk, func):
     """Help get the new value for input validation
