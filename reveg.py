@@ -110,8 +110,8 @@ class Ui(object):
             "Source file", CA_DEFAULT)
         
         #self.grid = StringVar(value=format(grid, "03o"))
-        self.grid = format(grid, "03o")
         #field = Frame(self.root)
+        self.grid = self.gui.Entry(format(grid, "03o"))
         #entry = Entry(field, textvariable=self.grid, validate="key",
         #    validatecommand=ValidateCommand(self.root, validate_grid))
         #entry.pack(side=tkinter.LEFT, expand=True, fill=tkinter.X)
@@ -121,13 +121,13 @@ class Ui(object):
         self.win.add_field("Highlight &grid sections", self.grid)
         
         #self.area = StringVar(value="".join(area))
-        self.area = "".join(area)
+        self.area = self.gui.Entry("".join(area))
         self.win.add_field("Select &areas", self.area)
         
         self.win.end_section()
         
         self.freqs = Freqs(self.gui, self.win, evcs=evcs, thold=freq_thold)
-        self.quads = Quads(self.win)
+        self.quads = Quads(self.gui, self.win)
         
         #button = Button(self.root, text="&Produce list . . .",
         #    command=self.join)
@@ -235,17 +235,17 @@ THOLD_DEFAULT = 0.3
 #                    button.state(("!selected",))
 
 class Quads(object):
-    def __init__(self, win):
+    def __init__(self, gui, win):
         win.start_section("Viridans &quadrats")
         
 #        self.name = StringVar()
-        self.name = None
+        self.name = gui.Entry()
         win.add_field("Name", self.name)
         
 #        self.file = StringVar()
 #        entry = FileEntry(form.master, dialogtype="tk_getOpenFile",
 #            variable=self.file)
-        self.file = None
+        self.file = gui.Entry()
         win.add_field("Source file", self.file, key="V")
         
 #        buttons = Frame(form.master)
@@ -507,10 +507,10 @@ class Freqs(object):
 #        self.file.trace("w", self.update)
         
 #        self.thold = DoubleVar(value=thold)
-        self.thold = str(thold)
 #        vcmd = ValidateCommand(form.master, self.validate_thold)
 #        entry = Entry(form.master, textvariable=self.thold, validate="key",
 #            validatecommand=vcmd)
+        self.thold = gui.Entry(str(thold))
         win.add_field("Frequency &threshold", self.thold)
         
         win.end_section()
@@ -578,7 +578,7 @@ def add_file(gui, win, label, default, **kw):
     #~ field = Frame(form.master)
     #~ file = StringVar(value=default)
     #~ entry = FileEntry(field, dialogtype="tk_getOpenFile", variable=file)
-    entry = default
+    entry = gui.Entry(default)
     #~ entry.pack(side=tkinter.LEFT, expand=True, fill=tkinter.X)
     #~ Button(field, text="Delete", command=partial(file.set, "")).pack(
         #~ side=tkinter.LEFT)
