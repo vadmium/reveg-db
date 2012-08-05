@@ -107,7 +107,7 @@ class Ui(object):
         
         #~ frame = FormSection(form, text="&Castlemaine plant list")
         self.ca_file = add_file(self.gui, self.win,
-            "Source file", CA_DEFAULT)
+            "Source file", CA_DEFAULT, key="C")
         
         #self.grid = StringVar(value=format(grid, "03o"))
         #field = Frame(self.root)
@@ -239,12 +239,12 @@ class Quads(object):
         
 #        self.name = StringVar()
 #        entry = Entry(form.master, textvariable=self.name)
-        win.add_field("Name", None)
+        win.add_field("Name", None, key="Q")
         
 #        self.file = StringVar()
 #        entry = FileEntry(form.master, dialogtype="tk_getOpenFile",
 #            variable=self.file)
-        win.add_field("Source file", None)
+        win.add_field("Source file", None, key="V")
         
 #        buttons = Frame(form.master)
 #        button = Button(buttons, text="Add", command=self.add)
@@ -492,7 +492,7 @@ class Freqs(object):
     def __init__(self, gui, win, evcs, thold):
 #        frame = FormSection(form, text="EVC frequencies")
         
-        self.file = add_file(gui, win, "Source file", FREQ_DEFAULT)
+        self.file = add_file(gui, win, "Source file", FREQ_DEFAULT, key="F")
         
         self.saved_evcs = evcs
 #        self.evc_list = ScrolledTree(form.master, tree=False, columns=(
