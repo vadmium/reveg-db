@@ -105,9 +105,9 @@ class Ui(object):
         self.gui = gui
         self.win = self.gui.Window(title="Reveg DB")
         
-        #~ frame = FormSection(form, text="&Castlemaine plant list")
+        self.win.start_section("&Castlemaine plant list")
         self.ca_file = add_file(self.gui, self.win,
-            "Source file", CA_DEFAULT, key="C")
+            "Source file", CA_DEFAULT)
         
         #self.grid = StringVar(value=format(grid, "03o"))
         #field = Frame(self.root)
@@ -123,7 +123,7 @@ class Ui(object):
         #entry = Entry(self.root, textvariable=self.area)
         self.win.add_field("Select &areas", None)
         
-        #frame.close()
+        self.win.end_section()
         
         self.freqs = Freqs(self.gui, self.win, evcs=evcs, thold=freq_thold)
         self.quads = Quads(self.win)
@@ -235,11 +235,11 @@ THOLD_DEFAULT = 0.3
 
 class Quads(object):
     def __init__(self, win):
-#        frame = FormSection(form, text="Viridans quadrats")
+        win.start_section("Viridans &quadrats")
         
 #        self.name = StringVar()
 #        entry = Entry(form.master, textvariable=self.name)
-        win.add_field("Name", None, key="Q")
+        win.add_field("Name", None)
         
 #        self.file = StringVar()
 #        entry = FileEntry(form.master, dialogtype="tk_getOpenFile",
@@ -259,7 +259,7 @@ class Quads(object):
 #        form.master.rowconfigure(self.list.grid_info()["row"], weight=1)
 #        self.list.bind_select(self.select)
         
-#        frame.close()
+        win.end_section()
     
     def add(self):
         item = self.list.add(values=(self.name.get(), self.file.get(),))
@@ -490,9 +490,9 @@ EVC_KEYS = ("EVC_DESC", "EVC")
 
 class Freqs(object):
     def __init__(self, gui, win, evcs, thold):
-#        frame = FormSection(form, text="EVC frequencies")
+        win.start_section("EVC &frequencies")
         
-        self.file = add_file(gui, win, "Source file", FREQ_DEFAULT, key="F")
+        self.file = add_file(gui, win, "Source file", FREQ_DEFAULT)
         
         self.saved_evcs = evcs
 #        self.evc_list = ScrolledTree(form.master, tree=False, columns=(
@@ -510,7 +510,7 @@ class Freqs(object):
 #            validatecommand=vcmd)
         win.add_field("Frequency &threshold", None)
         
-#        frame.close()
+        win.end_section()
     
     def update(self, *_):
         self.evc_list.tree.delete(*self.evc_list.tree.get_children())
