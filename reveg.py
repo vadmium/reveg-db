@@ -110,6 +110,7 @@ class Ui(object):
             "Source file", CA_DEFAULT)
         
         #self.grid = StringVar(value=format(grid, "03o"))
+        self.grid = format(grid, "03o")
         #field = Frame(self.root)
         #entry = Entry(field, textvariable=self.grid, validate="key",
         #    validatecommand=ValidateCommand(self.root, validate_grid))
@@ -117,11 +118,11 @@ class Ui(object):
         #grid_button = partial(grid_menu, self.grid, field)
         #grid_button = Button(field, text="Menu . . .", command=grid_button)
         #grid_button.pack(side=tkinter.LEFT)
-        self.win.add_field("Highlight &grid sections", None)
+        self.win.add_field("Highlight &grid sections", self.grid)
         
         #self.area = StringVar(value="".join(area))
-        #entry = Entry(self.root, textvariable=self.area)
-        self.win.add_field("Select &areas", None)
+        self.area = "".join(area)
+        self.win.add_field("Select &areas", self.area)
         
         self.win.end_section()
         
@@ -238,13 +239,14 @@ class Quads(object):
         win.start_section("Viridans &quadrats")
         
 #        self.name = StringVar()
-#        entry = Entry(form.master, textvariable=self.name)
-        win.add_field("Name", None)
+        self.name = None
+        win.add_field("Name", self.name)
         
 #        self.file = StringVar()
 #        entry = FileEntry(form.master, dialogtype="tk_getOpenFile",
 #            variable=self.file)
-        win.add_field("Source file", None, key="V")
+        self.file = None
+        win.add_field("Source file", self.file, key="V")
         
 #        buttons = Frame(form.master)
 #        button = Button(buttons, text="Add", command=self.add)
@@ -505,10 +507,11 @@ class Freqs(object):
 #        self.file.trace("w", self.update)
         
 #        self.thold = DoubleVar(value=thold)
+        self.thold = str(thold)
 #        vcmd = ValidateCommand(form.master, self.validate_thold)
 #        entry = Entry(form.master, textvariable=self.thold, validate="key",
 #            validatecommand=vcmd)
-        win.add_field("Frequency &threshold", None)
+        win.add_field("Frequency &threshold", self.thold)
         
         win.end_section()
     
