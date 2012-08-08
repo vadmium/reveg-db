@@ -103,11 +103,8 @@ help\tDisplay this help""".format(**locals()))
 class Ui(object):
     def __init__(self, gui, grid, area, evcs, freq_thold):
         self.gui = gui
-        self.win = self.gui.Window(title="Reveg DB")
         
-        self.win.start_section("&Castlemaine plant list")
-        self.ca_file = add_file(self.gui, self.win,
-            "Source file", CA_DEFAULT)
+        self.ca_file = file_entry(self.gui, CA_DEFAULT)
         
         #self.grid = StringVar(value=format(grid, "03o"))
         #field = Frame(self.root)
@@ -118,22 +115,26 @@ class Ui(object):
         #grid_button = partial(grid_menu, self.grid, field)
         #grid_button = Button(field, text="Menu . . .", command=grid_button)
         #grid_button.pack(side=tkinter.LEFT)
-        self.win.add_field("Highlight &grid sections", self.grid)
         
         #self.area = StringVar(value="".join(area))
         self.area = self.gui.Entry("".join(area))
-        self.win.add_field("Select &areas", self.area)
         
-        self.win.end_section()
-        
-        self.freqs = Freqs(self.gui, self.win, evcs=evcs, thold=freq_thold)
-        self.quads = Quads(self.gui, self.win)
+        self.freqs = Freqs(self.gui, evcs=evcs, thold=freq_thold)
+        self.quads = Quads(self.gui)
         
         #button = Button(self.root, text="&Produce list . . .",
         #    command=self.join)
         #button.grid(columnspan=4)
         
-        self.win.show()
+        self.win = self.gui.Window(title="Reveg DB", sections=(
+            dict(label="&Castlemaine plant list", fields=(
+                dict(label="Source file", field=self.ca_file),
+                dict(label="Highlight &grid sections", field=self.grid),
+                dict(label="Select &areas", field=self.area),
+            )),
+            self.freqs.win_section,
+            self.quads.win_section,
+        ))
     
     def join(self):
         (evcs, evc_names) = self.freqs.get_evcs()
@@ -235,18 +236,14 @@ THOLD_DEFAULT = 0.3
 #                    button.state(("!selected",))
 
 class Quads(object):
-    def __init__(self, gui, win):
-        win.start_section("Viridans &quadrats")
-        
+    def __init__(self, gui):
 #        self.name = StringVar()
         self.name = gui.Entry()
-        win.add_field("Name", self.name)
         
 #        self.file = StringVar()
 #        entry = FileEntry(form.master, dialogtype="tk_getOpenFile",
 #            variable=self.file)
         self.file = gui.Entry()
-        win.add_field("Source file", self.file, key="V")
         
 #        buttons = Frame(form.master)
 #        button = Button(buttons, text="Add", command=self.add)
@@ -261,7 +258,10 @@ class Quads(object):
 #        form.master.rowconfigure(self.list.grid_info()["row"], weight=1)
 #        self.list.bind_select(self.select)
         
-        win.end_section()
+        self.win_section = dict(label="Viridans &quadrats", fields=(
+            dict(label="Name", field=self.name),
+            dict(label="Source file", access="V", field=self.file),
+        ))
     
     def add(self):
         item = self.list.add(values=(self.name.get(), self.file.get(),))
@@ -491,10 +491,8 @@ def print_tagged(tag, list, file):
 EVC_KEYS = ("EVC_DESC", "EVC")
 
 class Freqs(object):
-    def __init__(self, gui, win, evcs, thold):
-        win.start_section("EVC &frequencies")
-        
-        self.file = add_file(gui, win, "Source file", FREQ_DEFAULT)
+    def __init__(self, gui, evcs, thold):
+        self.file = file_entry(gui, FREQ_DEFAULT)
         
         self.saved_evcs = evcs
 #        self.evc_list = ScrolledTree(form.master, tree=False, columns=(
@@ -511,9 +509,11 @@ class Freqs(object):
 #        entry = Entry(form.master, textvariable=self.thold, validate="key",
 #            validatecommand=vcmd)
         self.thold = gui.Entry(str(thold))
-        win.add_field("Frequency &threshold", self.thold)
         
-        win.end_section()
+        self.win_section = dict(label="EVC &frequencies", fields=(
+            dict(label="Source file", field=self.file),
+            dict(label="Frequency &threshold", field=self.thold),
+        ))
     
     def update(self, *_):
         self.evc_list.tree.delete(*self.evc_list.tree.get_children())
@@ -574,7 +574,7 @@ class Freqs(object):
         
         return 0 <= value <= 1
 
-def add_file(gui, win, label, default, **kw):
+def file_entry(gui, default):
     #~ field = Frame(form.master)
     #~ file = StringVar(value=default)
     #~ entry = FileEntry(field, dialogtype="tk_getOpenFile", variable=file)
@@ -582,7 +582,6 @@ def add_file(gui, win, label, default, **kw):
     #~ entry.pack(side=tkinter.LEFT, expand=True, fill=tkinter.X)
     #~ Button(field, text="Delete", command=partial(file.set, "")).pack(
         #~ side=tkinter.LEFT)
-    win.add_field(label, entry, **kw)
     return entry
 
 def ValidateCommand(tk, func):
