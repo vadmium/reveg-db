@@ -104,7 +104,7 @@ class Ui(object):
     def __init__(self, gui, grid, area, evcs, freq_thold):
         self.gui = gui
         
-        self.ca_file = file_entry(self.gui, CA_DEFAULT)
+        (ca_layout, self.ca_file) = file_entry(self.gui, CA_DEFAULT)
         
         #self.grid = StringVar(value=format(grid, "03o"))
         #field = Frame(self.root)
@@ -128,7 +128,7 @@ class Ui(object):
         
         self.win = self.gui.Window(title="Reveg DB", sections=(
             dict(label="&Castlemaine plant list", fields=(
-                dict(label="Source file", field=self.ca_file),
+                dict(label="Source file", field=ca_layout),
                 dict(label="Highlight &grid sections", field=self.grid),
                 dict(label="Select &areas", field=self.area),
             )),
@@ -492,7 +492,7 @@ EVC_KEYS = ("EVC_DESC", "EVC")
 
 class Freqs(object):
     def __init__(self, gui, evcs, thold):
-        self.file = file_entry(gui, FREQ_DEFAULT)
+        (file_layout, self.file) = file_entry(gui, FREQ_DEFAULT)
         
         self.saved_evcs = evcs
 #        self.evc_list = ScrolledTree(form.master, tree=False, columns=(
@@ -511,7 +511,7 @@ class Freqs(object):
         self.thold = gui.Entry(str(thold))
         
         self.win_section = dict(label="EVC &frequencies", fields=(
-            dict(label="Source file", field=self.file),
+            dict(label="Source file", field=file_layout),
             dict(label="Frequency &threshold", field=self.thold),
         ))
     
@@ -575,14 +575,14 @@ class Freqs(object):
         return 0 <= value <= 1
 
 def file_entry(gui, default):
-    #~ field = Frame(form.master)
     #~ file = StringVar(value=default)
     #~ entry = FileEntry(field, dialogtype="tk_getOpenFile", variable=file)
     entry = gui.Entry(default)
     #~ entry.pack(side=tkinter.LEFT, expand=True, fill=tkinter.X)
     #~ Button(field, text="Delete", command=partial(file.set, "")).pack(
         #~ side=tkinter.LEFT)
-    return entry
+    layout = gui.Layout((entry, gui.Button("Browse"), gui.Button("Delete")))
+    return (layout, entry)
 
 def ValidateCommand(tk, func):
     """Help get the new value for input validation
