@@ -256,15 +256,14 @@ class Quads(object):
 #        button.pack(side=tkinter.LEFT, expand=True)
 #        buttons.grid(column=form.column, columnspan=2, sticky=tkinter.EW)
         
-#        self.list = ScrolledTree(form.master, tree=False,
-#            columns=("Name", "File"))
+        self.list = gui.List(("Name", "File"))
 #        self.list.grid(column=form.column, columnspan=2, sticky=tkinter.NSEW)
-#        form.master.rowconfigure(self.list.grid_info()["row"], weight=1)
 #        self.list.bind_select(self.select)
         
         self.win_section = dict(label="Viridans &quadrats", fields=(
             dict(label="Name", field=self.name),
             dict(label="Source file", access="V", field=self.file),
+            self.list,
         ))
     
     def add(self):
