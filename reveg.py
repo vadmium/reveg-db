@@ -499,6 +499,7 @@ class Freqs(object):
         (file_layout, self.file) = file_entry(gui, FREQ_DEFAULT)
         
         self.saved_evcs = evcs
+        self.evc_list = gui.List(("EVC", "EVC_DESC"))
 #        self.evc_list = ScrolledTree(form.master, tree=False, columns=(
 #            Record(heading="EVC", width=(4, ScrolledTree.FIGURE)),
 #            Record(heading="EVC_DESC", width=30, stretch=True),
@@ -516,6 +517,7 @@ class Freqs(object):
         
         self.win_section = dict(label="EVC &frequencies", fields=(
             dict(label="Source file", field=file_layout),
+            dict(label="Select &EVCs", field=self.evc_list),
             dict(label="Frequency &threshold", field=self.thold),
         ))
     
