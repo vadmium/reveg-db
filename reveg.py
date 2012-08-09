@@ -263,6 +263,7 @@ class Quads(object):
         self.win_section = dict(label="Viridans &quadrats", fields=(
             dict(label="Name", field=self.name),
             dict(label="Source file", access="V", field=self.file),
+            gui.Layout((gui.Button("Add"), gui.Button("Remove"))),
             self.list,
         ))
     
