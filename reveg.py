@@ -138,6 +138,7 @@ class Ui(object):
             )),
             self.freqs.win_section,
             self.quads.win_section,
+            gui.Button("&Produce list . . ."),
         ))
     
     def join(self):
