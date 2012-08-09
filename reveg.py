@@ -111,14 +111,12 @@ class Ui(object):
         (ca_layout, self.ca_file) = file_entry(self.gui, CA_DEFAULT)
         
         #self.grid = StringVar(value=format(grid, "03o"))
-        #field = Frame(self.root)
         self.grid = self.gui.Entry(format(grid, "03o"))
         #entry = Entry(field, textvariable=self.grid, validate="key",
         #    validatecommand=ValidateCommand(self.root, validate_grid))
         #entry.pack(side=tkinter.LEFT, expand=True, fill=tkinter.X)
         #grid_button = partial(grid_menu, self.grid, field)
-        #grid_button = Button(field, text="Menu . . .", command=grid_button)
-        #grid_button.pack(side=tkinter.LEFT)
+        grid_button = gui.Button("Menu . . .")
         
         #self.area = StringVar(value="".join(area))
         self.area = self.gui.Entry("".join(area))
@@ -126,19 +124,18 @@ class Ui(object):
         self.freqs = Freqs(self.gui, evcs=evcs, thold=freq_thold)
         self.quads = Quads(self.gui)
         
-        #button = Button(self.root, text="&Produce list . . .",
-        #    command=self.join)
         #button.grid(columnspan=4)
         
         self.win = self.gui.Window(title=TITLE, sections=(
             dict(label="&Castlemaine plant list", fields=(
                 dict(label="Source file", field=ca_layout),
-                dict(label="Highlight &grid sections", field=self.grid),
+                dict(label="Highlight &grid sections",
+                    field=gui.Layout((self.grid, grid_button))),
                 dict(label="Select &areas", field=self.area),
             )),
             self.freqs.win_section,
             self.quads.win_section,
-            gui.Button("&Produce list . . ."),
+            gui.Button("&Produce list . . .", command=self.join),
         ))
     
     def join(self):
@@ -251,10 +248,6 @@ class Quads(object):
         self.file = gui.Entry()
         
 #        buttons = Frame(form.master)
-#        button = Button(buttons, text="Add", command=self.add)
-#        button.pack(side=tkinter.LEFT, expand=True)
-#        button = Button(buttons, text="Remove", command=self.remove)
-#        button.pack(side=tkinter.LEFT, expand=True)
 #        buttons.grid(column=form.column, columnspan=2, sticky=tkinter.EW)
         
         self.list = gui.List(("Name", "File"))
@@ -264,7 +257,10 @@ class Quads(object):
         self.win_section = dict(label="Viridans &quadrats", fields=(
             dict(label="Name", field=self.name),
             dict(label="Source file", access="V", field=self.file),
-            gui.Layout((gui.Button("Add"), gui.Button("Remove"))),
+            gui.Layout((
+                gui.Button("Add", command=self.add),
+                gui.Button("Remove", command=self.remove),
+            )),
             self.list,
         ))
     
@@ -588,7 +584,7 @@ def file_entry(gui, default):
     #~ entry.pack(side=tkinter.LEFT, expand=True, fill=tkinter.X)
     #~ Button(field, text="Delete", command=partial(file.set, "")).pack(
         #~ side=tkinter.LEFT)
-    layout = gui.Layout((entry, gui.Button("Browse"), gui.Button("Delete")))
+    layout = gui.Layout((entry, gui.Button("Browse", command=None), gui.Button("Delete")))
     return (layout, entry)
 
 def ValidateCommand(tk, func):
