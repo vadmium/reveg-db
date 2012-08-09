@@ -9,6 +9,8 @@ from contextlib import closing
 from lib import Record
 import guis
 
+TITLE = "Reveg DB version 0.2.0"
+
 def main():
     help = False
     grid = 0o000
@@ -52,7 +54,9 @@ Try "{} help"'''.format(arg, argv[0]))
     
     if help:
         print("""\
-join ca ... [area ...] [freqs ... evc ...] [quad ...] [options] > output.html
+{TITLE}
+
+reveg.py ca ... [area ...] [freqs ... evc ...] [quad ...] [options] > output.html
 \tIncludes only those plants selected by the "area", "evc" and "quad"
 \toptions. Ignores plants with * and + origin, and ferns, orchids and
 \tmistletoes.
@@ -126,7 +130,7 @@ class Ui(object):
         #    command=self.join)
         #button.grid(columnspan=4)
         
-        self.win = self.gui.Window(title="Reveg DB", sections=(
+        self.win = self.gui.Window(title=TITLE, sections=(
             dict(label="&Castlemaine plant list", fields=(
                 dict(label="Source file", field=ca_layout),
                 dict(label="Highlight &grid sections", field=self.grid),
