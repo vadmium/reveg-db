@@ -108,7 +108,11 @@ class Ui(object):
     def __init__(self, gui, grid, area, evcs, freq_thold):
         self.gui = gui
         
-        (ca_layout, self.ca_file) = file_entry(self.gui, CA_DEFAULT)
+        self.ca_file = FileEntry(self.gui, CA_DEFAULT,
+            title='Find "{CA_DEFAULT}"'.format_map(globals()), types=(
+                ("Spreadsheet", (".TXT", ".csv", ".xls",)),
+                ("All", ("",)),
+            ))
         
         #self.grid = StringVar(value=format(grid, "03o"))
         self.grid = self.gui.Entry(format(grid, "03o"))
@@ -128,7 +132,7 @@ class Ui(object):
         
         self.win = self.gui.Window(title=TITLE, sections=(
             dict(label="&Castlemaine plant list", fields=(
-                dict(label="Source file", field=ca_layout),
+                dict(label="Source file", field=self.ca_file.layout),
                 dict(label="Highlight &grid sections",
                     field=gui.Layout((self.grid, grid_button))),
                 dict(label="Select &areas", field=self.area),
@@ -493,7 +497,11 @@ EVC_KEYS = ("EVC_DESC", "EVC")
 
 class Freqs(object):
     def __init__(self, gui, evcs, thold):
-        (file_layout, self.file) = file_entry(gui, FREQ_DEFAULT)
+        self.file = FileEntry(gui, FREQ_DEFAULT,
+            title='Find "{FREQ_DEFAULT}"'.format_map(globals()), types=(
+                ("Spreadsheet", (".csv", ".xls",)),
+                ("All", ("",)),
+            ))
         
         self.saved_evcs = evcs
         self.evc_list = gui.List(("EVC", "EVC_DESC"))
@@ -513,7 +521,7 @@ class Freqs(object):
         self.thold = gui.Entry(str(thold))
         
         self.win_section = dict(label="EVC &frequencies", fields=(
-            dict(label="Source file", field=file_layout),
+            dict(label="Source file", field=self.file.layout),
             dict(label="Select &EVCs", field=self.evc_list),
             dict(label="Frequency &threshold", field=self.thold),
         ))
@@ -577,15 +585,26 @@ class Freqs(object):
         
         return 0 <= value <= 1
 
-def file_entry(gui, default):
-    #~ file = StringVar(value=default)
-    #~ entry = FileEntry(field, dialogtype="tk_getOpenFile", variable=file)
-    entry = gui.Entry(default)
-    #~ entry.pack(side=tkinter.LEFT, expand=True, fill=tkinter.X)
-    #~ Button(field, text="Delete", command=partial(file.set, "")).pack(
-        #~ side=tkinter.LEFT)
-    layout = gui.Layout((entry, gui.Button("Browse", command=None), gui.Button("Delete")))
-    return (layout, entry)
+class FileEntry(object):
+    def __init__(self, gui, default=None, *, types, title=None):
+        self.gui =  gui
+        self.types = types
+        self.title = title
+        
+        entry = gui.Entry(default)
+        #~ Button(field, text="Delete", command=partial(file.set, "")).pack(
+            #~ side=tkinter.LEFT)
+        self.layout = gui.Layout((
+            entry,
+            gui.Button("Browse", command=self.browse),
+            gui.Button("Delete"),
+        ))
+    
+    def browse(self):
+        self.gui.file_browse_open(
+            title=self.title,
+            types=self.types,
+        )
 
 def ValidateCommand(tk, func):
     """Help get the new value for input validation
