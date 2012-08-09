@@ -591,20 +591,23 @@ class FileEntry(object):
         self.types = types
         self.title = title
         
-        entry = gui.Entry(default)
+        self.entry = gui.Entry(default)
         #~ Button(field, text="Delete", command=partial(file.set, "")).pack(
             #~ side=tkinter.LEFT)
         self.layout = gui.Layout((
-            entry,
+            self.entry,
             gui.Button("Browse", command=self.browse),
             gui.Button("Delete"),
         ))
     
     def browse(self):
-        self.gui.file_browse_open(
+        file = self.gui.file_browse_open(
             title=self.title,
             types=self.types,
+            file=self.entry.get(),
         )
+        if file is not None:
+            self.entry.set(file)
 
 def ValidateCommand(tk, func):
     """Help get the new value for input validation
