@@ -109,10 +109,9 @@ class Ui(object):
         self.gui = gui
         
         self.ca_file = FileEntry(self.gui, CA_DEFAULT,
-            title='Find "{CA_DEFAULT}"'.format_map(globals()), types=(
-                ("Spreadsheet", (".TXT", ".csv", ".xls",)),
-                ("All", ("",)),
-            ))
+            title='Find "{CA_DEFAULT}"'.format_map(globals()),
+            types=(("Spreadsheet", ("TXT", "csv", "xls")),),
+        )
         
         #self.grid = StringVar(value=format(grid, "03o"))
         self.grid = self.gui.Entry(format(grid, "03o"))
@@ -499,10 +498,7 @@ class Freqs(object):
     def __init__(self, gui, evcs, thold):
         self.file = FileEntry(gui, FREQ_DEFAULT,
             title='Find "{FREQ_DEFAULT}"'.format_map(globals()),
-            types=(
-                ("Spreadsheet", (".csv", ".xls",)),
-                ("All", ("",)),
-            ),
+            types=(("Spreadsheet", ("csv", "xls")),),
             command=self.update,
         )
         
