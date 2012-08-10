@@ -498,10 +498,13 @@ EVC_KEYS = ("EVC_DESC", "EVC")
 class Freqs(object):
     def __init__(self, gui, evcs, thold):
         self.file = FileEntry(gui, FREQ_DEFAULT,
-            title='Find "{FREQ_DEFAULT}"'.format_map(globals()), types=(
+            title='Find "{FREQ_DEFAULT}"'.format_map(globals()),
+            types=(
                 ("Spreadsheet", (".csv", ".xls",)),
                 ("All", ("",)),
-            ))
+            ),
+            command=self.update,
+        )
         
         self.saved_evcs = evcs
         self.evc_list = gui.List(("EVC", "EVC_DESC"))
@@ -511,8 +514,6 @@ class Freqs(object):
 #        ))
 #        form.add_field(self.evc_list, text="Select EVCs", multiline=True)
 #        self.select_binding = self.evc_list.bind_select(self.select)
-        
-#        self.file.trace("w", self.update)
         
 #        self.thold = DoubleVar(value=thold)
 #        vcmd = ValidateCommand(form.master, self.validate_thold)
@@ -526,19 +527,19 @@ class Freqs(object):
             dict(label="Frequency &threshold", field=self.thold),
         ))
     
-    def update(self, *_):
-        self.evc_list.tree.delete(*self.evc_list.tree.get_children())
+    def update(self):
+        self.evc_list.clear()
         
-        if not self.file.get():
+        if not self.file.entry.get():
             return
         
-        with closing(FreqReader(self.file.get())) as file:
+        with closing(FreqReader(self.file.entry.get())) as file:
             evcs = set(tuple(row[key] for key in EVC_KEYS)
                 for row in file)
         
         selection = list()
         for (name, number) in sorted(evcs):
-            item = self.evc_list.add(values=(number, name))
+            item = self.evc_list.add((number, name))
             if name in self.saved_evcs or number in self.saved_evcs:
                 selection.append(item)
         
@@ -586,10 +587,12 @@ class Freqs(object):
         return 0 <= value <= 1
 
 class FileEntry(object):
-    def __init__(self, gui, default=None, *, types, title=None):
+    def __init__(self, gui, default=None, *,
+    types, title=None, command=None):
         self.gui =  gui
         self.types = types
         self.title = title
+        self.command = command
         
         self.entry = gui.Entry(default)
         #~ Button(field, text="Delete", command=partial(file.set, "")).pack(
@@ -606,8 +609,12 @@ class FileEntry(object):
             types=self.types,
             file=self.entry.get(),
         )
-        if file is not None:
-            self.entry.set(file)
+        if file is None:
+            return
+        
+        self.entry.set(file)
+        if self.command:
+            self.command()
 
 def ValidateCommand(tk, func):
     """Help get the new value for input validation
