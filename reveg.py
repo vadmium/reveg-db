@@ -242,24 +242,17 @@ THOLD_DEFAULT = 0.3
 
 class Quads(object):
     def __init__(self, gui):
-#        self.name = StringVar()
         self.name = gui.Entry()
-        
-#        self.file = StringVar()
-#        entry = FileEntry(form.master, dialogtype="tk_getOpenFile",
-#            variable=self.file)
-        self.file = gui.Entry()
-        
-#        buttons = Frame(form.master)
-#        buttons.grid(column=form.column, columnspan=2, sticky=tkinter.EW)
-        
+        self.file = FileEntry(gui,
+            title="Find Viridans quadrat file",
+            types=(("CSV spreadsheet", ("csv",)),),
+            delete=False,
+        )
         self.list = gui.List(("Name", "File"))
-#        self.list.grid(column=form.column, columnspan=2, sticky=tkinter.NSEW)
-#        self.list.bind_select(self.select)
         
         self.win_section = dict(label="Viridans &quadrats", fields=(
             dict(label="Name", field=self.name),
-            dict(label="Source file", access="V", field=self.file),
+            dict(label="Source file", access="V", field=self.file.layout),
             gui.Layout((
                 gui.Button("Add", command=self.add),
                 gui.Button("Remove", command=self.remove),
@@ -268,15 +261,15 @@ class Quads(object):
         ))
     
     def add(self):
-        item = self.list.add(values=(self.name.get(), self.file.get(),))
-        self.list.tree.focus(item)
-        self.list.tree.selection_set(item)
+        item = self.list.add((self.name.get(), self.file.entry.get(),))
+        #~ self.list.tree.focus(item)
+        #~ self.list.tree.selection_set(item)
         
-        # Apparently needed when calling Treeview.see() straight after adding
-        # an item
-        self.list.update_idletasks()
+        #~ # Apparently needed when calling Treeview.see() straight after adding
+        #~ # an item
+        #~ self.list.update_idletasks()
         
-        self.list.tree.see(item)
+        #~ self.list.tree.see(item)
     
     def select(self, *_):
         (item,) = self.list.tree.selection()
@@ -581,7 +574,7 @@ class Freqs(object):
 
 class FileEntry(object):
     def __init__(self, gui, default=None, *,
-    types, title=None, command=None):
+    types, title=None, command=None, delete=True):
         self.gui =  gui
         self.types = types
         self.title = title
@@ -590,11 +583,10 @@ class FileEntry(object):
         self.entry = gui.Entry(default)
         #~ Button(field, text="Delete", command=partial(file.set, "")).pack(
             #~ side=tkinter.LEFT)
-        self.layout = gui.Layout((
-            self.entry,
-            gui.Button("Browse", command=self.browse),
-            gui.Button("Delete"),
-        ))
+        cells = [self.entry, gui.Button("Browse", command=self.browse)]
+        if delete:
+            cells.append(gui.Button("Delete"))
+        self.layout = gui.Layout(cells)
     
     def browse(self):
         file = self.gui.file_browse_open(
