@@ -22,7 +22,8 @@ from commctrl import (LVS_SHOWSELALWAYS, LVS_REPORT, WC_LISTVIEW)
 from commctrl import (
     LVM_GETEXTENDEDLISTVIEWSTYLE, LVM_SETEXTENDEDLISTVIEWSTYLE,
     LVM_INSERTCOLUMNW,
-    LVM_DELETEALLITEMS, LVM_INSERTITEMW, LVM_SETITEMTEXTW, LVM_GETITEMTEXTW,
+    LVM_DELETEALLITEMS, LVM_DELETEITEM, LVM_INSERTITEMW,
+    LVM_SETITEMTEXTW, LVM_GETITEMTEXTW,
 )
 from commctrl import (LVS_EX_FULLROWSELECT, LVCFMT_LEFT)
 from win32gui_struct import (
@@ -34,6 +35,7 @@ from win32gui import GetOpenFileNameW
 from win32con import (OFN_HIDEREADONLY, OFN_EXPLORER)
 import win32gui
 from commctrl import LVIS_SELECTED
+from win32api import MAKELONG
 from win32gui import PyMakeBuffer
 from struct import Struct
 from commctrl import (LVN_ITEMCHANGED, LVIF_STATE, LVIF_TEXT)
@@ -326,6 +328,9 @@ class Win(object):
                 self.sel_set.add(item)
                 self.selected(item, True)
         
+        def remove(self, item):
+            SendMessage(self.hwnd, LVM_DELETEITEM, item)
+        
         def notify(self, code, pnmh):
             if code != LVN_ITEMCHANGED:
                 return
@@ -434,7 +439,9 @@ def create_control(parent, wndclass, text=None,
         id,
         None,
     None)
-    SendMessage(hwnd, WM_SETFONT, GetStockObject(DEFAULT_GUI_FONT), 0 << 0)
+    redraw = 0
+    SendMessage(hwnd, WM_SETFONT,
+        GetStockObject(DEFAULT_GUI_FONT), MAKELONG(redraw, 0))
     return hwnd
 
 def nop():

@@ -271,33 +271,15 @@ class Quads(object):
         
         #~ self.list.tree.see(item)
     
+    def remove(self):
+        for item in reversed(self.list.selection()):
+            self.list.remove(item)
+    
     def select(self, *_):
         (item,) = self.list.tree.selection()
         (name, file) = self.list.tree.item(item, option="values")
         self.name.set(name)
         self.file.set(file)
-    
-    def remove(self):
-        # Empty selection returns empty string?!
-        items = tuple(self.list.tree.selection())
-        
-        focus = self.list.tree.focus()
-        refocus = focus in items
-        if refocus:
-            new = focus
-            while new in items:
-                new = self.list.tree.next(new)
-            if not new:
-                new = focus
-                while new in items:
-                    new = self.list.tree.prev(new)
-            if not new:
-                refocus = False
-        
-        self.list.tree.delete(*items)
-        
-        if refocus:
-            self.list.tree.focus(new)
     
     def get(self):
         files = list()
