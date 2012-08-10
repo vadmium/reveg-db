@@ -30,6 +30,7 @@ from win32gui import InitCommonControls
 from win32gui import GetOpenFileNameW
 from win32con import (OFN_HIDEREADONLY, OFN_EXPLORER)
 import win32gui
+from commctrl import LVIS_SELECTED
 
 class Win(object):
     def __init__(self):
@@ -281,8 +282,12 @@ class Win(object):
             SendMessage(self.hwnd, LVM_DELETEALLITEMS)
             del self.items[:]
         
-        def add(self, columns):
-            (param, obj) = PackLVITEM(item=len(self.items), text=columns[0])
+        def add(self, columns, selected=False):
+            (param, obj) = PackLVITEM(
+                item=len(self.items),
+                text=columns[0],
+                stateMask=LVIS_SELECTED, state=LVIS_SELECTED * selected,
+            )
             self.items.append([obj])
             item = SendMessage(self.hwnd, LVM_INSERTITEMW, 0, param)
             

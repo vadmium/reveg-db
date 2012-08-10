@@ -533,27 +533,24 @@ class Freqs(object):
             evcs = set(tuple(row[key] for key in EVC_KEYS)
                 for row in file)
         
-        selection = list()
         for (name, number) in sorted(evcs):
-            item = self.evc_list.add((number, name))
-            if name in self.saved_evcs or number in self.saved_evcs:
-                selection.append(item)
+            selected = name in self.saved_evcs or number in self.saved_evcs
+            item = self.evc_list.add((number, name), selected=selected)
         
-        if selection:
-            self.evc_list.unbind_select(self.select_binding)
-            self.evc_list.tree.focus(selection[0])
-            self.evc_list.tree.selection_set(tuple(selection))
+        #~ if selection:
+            #~ self.evc_list.unbind_select(self.select_binding)
+            #~ self.evc_list.tree.focus(selection[0])
             
-            # Treeview.see() straight after adding items does not seem to
-            # work without at least update_idletasks(), and the <<Treeview
-            # Select>> event does not seem to be handled until update() is
-            # called.
-            self.evc_list.update()
+            #~ # Treeview.see() straight after adding items does not seem to
+            #~ # work without at least update_idletasks(), and the <<Treeview
+            #~ # Select>> event does not seem to be handled until update() is
+            #~ # called.
+            #~ self.evc_list.update()
             
-            self.evc_list.tree.see(selection[-1])
-            self.evc_list.tree.see(selection[0])
+            #~ self.evc_list.tree.see(selection[-1])
+            #~ self.evc_list.tree.see(selection[0])
             
-            self.select_binding = self.evc_list.bind_select(self.select)
+            #~ self.select_binding = self.evc_list.bind_select(self.select)
     
     def select(self, event):
         self.saved_evcs = list()
