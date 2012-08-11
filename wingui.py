@@ -43,6 +43,7 @@ from win32api import MAKELONG
 from win32gui import PyMakeBuffer
 from struct import Struct
 from commctrl import (LVN_ITEMCHANGED, LVIF_STATE, LVIF_TEXT)
+from win32con import ES_AUTOHSCROLL
 
 class Win(object):
     def __init__(self):
@@ -130,8 +131,8 @@ class Win(object):
                     
                     for field in section["fields"]:
                         if isinstance(field, Mapping):
-                            label = label_key(field.pop("label"), access)
                             access = field.pop("access", None)
+                            label = label_key(field.pop("label"), access)
                             target = field["field"]
                             
                             field["label"] = create_control(self.hwnd,
@@ -237,6 +238,7 @@ class Win(object):
             self.hwnd = create_control(self.parent, "EDIT",
                 tabstop=True,
                 text=self.value,
+                style=ES_AUTOHSCROLL,
                 ex_style=WS_EX_CLIENTEDGE,
             )
         
