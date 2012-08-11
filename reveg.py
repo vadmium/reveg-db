@@ -447,7 +447,10 @@ class join(object):
     
     def write_html(self, entries, file):
         print("""\
-<html><body><table>
+<!doctype html>
+<html>
+<head><meta charset=UTF-8></head>
+<body><table>
   <tr>""", file=file)
         print_tagged("th", self.headings(), file)
         print("""  </tr>""", file=file)
@@ -466,7 +469,7 @@ class join(object):
         )
         if not file:
             return
-        with open(file, "w") as file:
+        with open(file, "w", encoding="UTF-8") as file:
             self.write_html(self.entries, file)
 
 def print_tagged(tag, list, file):
