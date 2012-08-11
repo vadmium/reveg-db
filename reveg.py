@@ -453,7 +453,7 @@ class join(object):
         print("""</table></body></html>""", file=file)
     
     def save(self):
-        file = self.gui.file_browse_open(
+        file = self.gui.file_browse("save",
             title="Save as HTML",
             types=(("HTML", ("html", "htm")),),
         )
@@ -567,7 +567,7 @@ class FileEntry(object):
         self.layout = gui.Layout(cells)
     
     def browse(self):
-        file = self.gui.file_browse_open(
+        file = self.gui.file_browse("open",
             title=self.title,
             types=self.types,
             file=self.entry.get(),
