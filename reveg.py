@@ -543,8 +543,8 @@ class Freqs(object):
     
     def selected(self, item, selected):
         self.saved_evcs = list()
-        for item in self.evc_list.tree.selection():
-            item = self.evc_list.tree.item(item, option="values")
+        for item in self.evc_list.selection():
+            item = self.evc_list.get(item)
             self.saved_evcs.extend(item)
     
     def get_evcs(self):
