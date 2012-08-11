@@ -145,10 +145,10 @@ class Ui(object):
         (evcs, evc_names) = self.freqs.get_evcs()
         (quad_files, quad_names) = self.quads.get()
         join(self.gui, self.win,
-            ca_file=self.ca_file.get() or None,
+            ca_file=self.ca_file.entry.get() or None,
             grid=int(self.grid.get(), 8),
             area=self.area.get(),
-            freq_file=self.freqs.file.get() or None,
+            freq_file=self.freqs.file.entry.get() or None,
             evcs=evcs, evc_names=evc_names,
             freq_thold=self.freqs.thold.get(),
             quads=quad_files, quad_names=quad_names,
@@ -248,7 +248,7 @@ class Quads(object):
             types=(("CSV spreadsheet", ("csv",)),),
             delete=False,
         )
-        self.list = gui.List(("Name", "File"))
+        self.list = gui.List(("Name", "File"), selected=self.selected)
         
         self.win_section = dict(label="Viridans &quadrats", fields=(
             dict(label="Name", field=self.name),
@@ -275,17 +275,17 @@ class Quads(object):
         for item in reversed(self.list.selection()):
             self.list.remove(item)
     
-    def select(self, *_):
-        (item,) = self.list.tree.selection()
-        (name, file) = self.list.tree.item(item, option="values")
+    def selected(self, item, selected):
+        (item,) = self.list.selection()
+        (name, file) = self.list.get(item)
         self.name.set(name)
-        self.file.set(file)
+        self.file.entry.set(file)
     
     def get(self):
         files = list()
         names = list()
-        for item in self.list.tree.get_children():
-            (name, file) = self.list.tree.item(item, option="values")
+        for item in range(self.list.count()):
+            (name, file) = self.list.get(item)
             files.append(file)
             names.append(name)
         return (files, names)
@@ -532,8 +532,8 @@ class Freqs(object):
     def get_evcs(self):
         numbers = list()
         names = list()
-        for item in self.evc_list.tree.selection():
-            (number, name) = self.evc_list.tree.item(item, option="values")
+        for item in self.evc_list.selection():
+            (number, name) = self.evc_list.get(item)
             numbers.append(number)
             names.append(name)
         return (numbers, names)
