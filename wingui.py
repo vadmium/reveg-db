@@ -32,7 +32,9 @@ from win32gui_struct import (
 from collections import (Mapping, Iterable)
 from win32gui import InitCommonControls
 from win32gui import (GetOpenFileNameW, GetSaveFileNameW)
-from win32con import (OFN_HIDEREADONLY, OFN_EXPLORER)
+from win32con import (
+    OFN_HIDEREADONLY, OFN_EXPLORER, OFN_OVERWRITEPROMPT, OFN_NOCHANGEDIR,
+)
 import win32gui
 from commctrl import LVIS_SELECTED
 from win32api import MAKELONG
@@ -337,6 +339,7 @@ class Win(object):
                 self.selected(item, True)
         
         def remove(self, item):
+            self.items.pop(item)
             SendMessage(self.hwnd, LVM_DELETEITEM, item)
         
         def notify(self, code, pnmh):
@@ -421,7 +424,8 @@ class Win(object):
                 Filter="".join(filter),
                 File=file,
                 Title=title,
-                Flags=OFN_HIDEREADONLY | OFN_EXPLORER,
+                Flags=OFN_HIDEREADONLY | OFN_EXPLORER | OFN_OVERWRITEPROMPT |
+                    OFN_NOCHANGEDIR,
                 DefExt=defext[0],
             )
         except win32gui.error as err:

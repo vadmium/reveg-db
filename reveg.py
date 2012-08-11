@@ -150,7 +150,7 @@ class Ui(object):
             area=self.area.get(),
             freq_file=self.freqs.file.entry.get() or None,
             evcs=evcs, evc_names=evc_names,
-            freq_thold=self.freqs.thold.get(),
+            freq_thold=float(self.freqs.thold.get()),
             quads=quad_files, quad_names=quad_names,
         )
 
