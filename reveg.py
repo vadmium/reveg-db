@@ -4,7 +4,7 @@ from sys import (argv, stderr)
 from collections import defaultdict
 from xml.sax import saxutils
 #~ from functools import partial
-from db import (CaCsvReader, FreqCsvReader, QuadratReader)
+from db import QuadratReader
 from contextlib import closing
 from lib import Record
 import guis
@@ -352,7 +352,11 @@ class join(object):
         plants = defaultdict(Plant)
         
         if self.ca_file is not None:
-            with closing(CaCsvReader(self.ca_file)) as file:
+            if self.ca_file.endswith(".xls"):
+                from excel import CplExcelReader as Reader
+            else:
+                from db import CaCsvReader as Reader
+            with closing(Reader(self.ca_file)) as file:
                 for plant in file:
                     if (plant.ex in tuple("*+") or
                     plant.group == "f" or
@@ -368,7 +372,11 @@ class join(object):
             
             max_freq = dict()
             
-            with closing(FreqCsvReader(self.freq_file)) as file:
+            if self.freq_file.endswith(".xls"):
+                from excel import FreqExcelReader as Reader
+            else:
+                from db import FreqCsvReader as Reader
+            with closing(Reader(self.freq_file)) as file:
                 for plant in file:
                     for key in self.evc_keys:
                         evc = plant[key]
@@ -498,10 +506,15 @@ class Freqs(object):
     def update(self):
         self.evc_list.clear()
         
-        if not self.file.entry.get():
+        file = self.file.entry.get()
+        if not file:
             return
         
-        with closing(FreqCsvReader(self.file.entry.get())) as file:
+        if file.endswith(".xls"):
+            from excel import FreqExcelReader as Reader
+        else:
+            from db import FreqCsvReader as Reader
+        with closing(Reader(file)) as file:
             evcs = set(tuple(row[key] for key in EVC_KEYS)
                 for row in file)
         
