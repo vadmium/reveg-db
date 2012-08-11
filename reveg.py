@@ -496,15 +496,12 @@ class Freqs(object):
         )
         
         self.saved_evcs = evcs
-        self.evc_list = gui.List(("EVC", "EVC_DESC"))
+        self.evc_list = gui.List(("EVC", "EVC_DESC"), selected=self.selected)
 #        self.evc_list = ScrolledTree(form.master, tree=False, columns=(
 #            Record(heading="EVC", width=(4, ScrolledTree.FIGURE)),
 #            Record(heading="EVC_DESC", width=30, stretch=True),
 #        ))
-#        form.add_field(self.evc_list, text="Select EVCs", multiline=True)
-#        self.select_binding = self.evc_list.bind_select(self.select)
         
-#        self.thold = DoubleVar(value=thold)
 #        vcmd = ValidateCommand(form.master, self.validate_thold)
 #        entry = Entry(form.master, textvariable=self.thold, validate="key",
 #            validatecommand=vcmd)
@@ -526,12 +523,13 @@ class Freqs(object):
             evcs = set(tuple(row[key] for key in EVC_KEYS)
                 for row in file)
         
+        saved_evcs = self.saved_evcs
         for (name, number) in sorted(evcs):
-            selected = name in self.saved_evcs or number in self.saved_evcs
+            selected = name in saved_evcs or number in saved_evcs
             item = self.evc_list.add((number, name), selected=selected)
+        self.saved_evcs = saved_evcs
         
         #~ if selection:
-            #~ self.evc_list.unbind_select(self.select_binding)
             #~ self.evc_list.tree.focus(selection[0])
             
             #~ # Treeview.see() straight after adding items does not seem to
@@ -542,10 +540,8 @@ class Freqs(object):
             
             #~ self.evc_list.tree.see(selection[-1])
             #~ self.evc_list.tree.see(selection[0])
-            
-            #~ self.select_binding = self.evc_list.bind_select(self.select)
     
-    def select(self, event):
+    def selected(self, item, selected):
         self.saved_evcs = list()
         for item in self.evc_list.tree.selection():
             item = self.evc_list.tree.item(item, option="values")
