@@ -303,10 +303,10 @@ class join(object):
         
         if evc_names is None:
             self.evc_names = evcs
-            self.evc_keys = EVC_KEYS
+            self.evc_key = "EVC_DESC"
         else:
             self.evc_names = evc_names
-            self.evc_keys = ("EVC",)
+            self.evc_key = "EVC"
         
         if quad_names is None:
             self.quad_names = quads
@@ -359,7 +359,7 @@ class join(object):
             with closing(Reader(self.ca_file)) as file:
                 for plant in file:
                     if (plant.ex in tuple("*+") or
-                    plant.group == "f" or
+                    plant.group in ("f", "FERNS") or
                     plant.family in ("Orchidaceae", "Loranthaceae")):
                         continue
                     plants[plant.name].ca = plant
@@ -378,26 +378,25 @@ class join(object):
                 from db import FreqCsvReader as Reader
             with closing(Reader(self.freq_file)) as file:
                 for plant in file:
-                    for key in self.evc_keys:
-                        evc = plant[key]
-                        if evc not in self.evcs:
-                            continue
-                        
-                        freq = plant["Frequency"]
-                        try:
-                            max = max_freq[evc]
-                        except LookupError:
+                    evc = plant[self.evc_key]
+                    if evc not in self.evcs:
+                        continue
+                    
+                    freq = plant["Frequency"]
+                    try:
+                        max = max_freq[evc]
+                    except LookupError:
+                        max_freq[evc] = freq
+                    else:
+                        if freq > max:
                             max_freq[evc] = freq
-                        else:
-                            if freq > max:
-                                max_freq[evc] = freq
-                        
-                        if (plant["ORIGIN"] == "*" or
-                        plant["DIVISION"] in (DIV_FERN, DIV_MOSS) or
-                        plant["FAMILYNO"] in (FAM_ORCHID, FAM_MISTLETOE)):
-                            continue
-                        
-                        plants[plant["NAME"]].evcs[evc] = plant
+                    
+                    if (plant["ORIGIN"] == "*" or
+                    plant["DIVISION"] in (DIV_FERN, DIV_MOSS) or
+                    plant["FAMILYNO"] in (FAM_ORCHID, FAM_MISTLETOE)):
+                        continue
+                    
+                    plants[plant["NAME"]].evcs[evc] = plant
         
         for quad_file in self.quads:
             with closing(QuadratReader(quad_file)) as file:
@@ -472,7 +471,7 @@ class join(object):
 
 def print_tagged(tag, list, file):
     for text in list:
-        text = saxutils.escape(text)
+        text = saxutils.escape(text or "")
         print("<{tag}>{text}</{tag}>".format_map(locals()), file=file)
 
 EVC_KEYS = ("EVC_DESC", "EVC")
@@ -520,6 +519,7 @@ class Freqs(object):
         
         saved_evcs = self.saved_evcs
         for (name, number) in sorted(evcs):
+            number = str(number)
             selected = name in saved_evcs or number in saved_evcs
             item = self.evc_list.add((number, name), selected=selected)
         self.saved_evcs = saved_evcs
@@ -547,7 +547,7 @@ class Freqs(object):
         names = list()
         for item in self.evc_list.selection():
             (number, name) = self.evc_list.get(item)
-            numbers.append(number)
+            numbers.append(int(number))
             names.append(name)
         return (numbers, names)
     

@@ -56,11 +56,10 @@ def CplExcelReader(file):
                     if type not in EXCEL_BLANKS:
                         break
                 else:
-                    family = Record()
-                    for name in fam_fields:
-                        value = sheet.cell_value(row, fields[name])
-                        setattr(family, name, value.strip())
-                    extra.update(family=family)
+                    extra.update(
+                        family=sheet.cell_value(row, fields["name"]),
+                        fam_com=sheet.cell_value(row, fields["common"]),
+                    )
                     continue
                 
                 plant = Record(extra)
