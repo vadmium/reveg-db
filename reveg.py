@@ -291,11 +291,11 @@ class Quads(object):
         return (files, names)
 
 class join(object):
-    def __init__(self, gui, *,
+    def __init__(self, gui, parent=None, *,
     ca_file, grid, area,
     freq_file, evcs, evc_names=None, freq_thold,
     quads, quad_names=None):
-        for name in (
+        for name in ("gui, "
         "ca_file, grid, area, "
         "freq_file, evcs, freq_thold, "
         "quads").split(", "):
@@ -313,28 +313,29 @@ class join(object):
         else:
             self.quad_names = quad_names
         
-        self.window = gui.Window(..., title="Plant list")
-        self.window.bind("<Return>", self.save)
-        
         headings = self.headings()
-        output = ScrolledTree(self.window, tree=False, columns=headings)
-        output.grid(sticky=tkinter.NSEW)
-        self.window.rowconfigure(0, weight=1)
-        self.window.columnconfigure(0, weight=1)
+        output = self.gui.List(headings)
+        
+        self.window = self.gui.Window(parent, title="Plant list", sections=(
+            dict(label=None, fields=(output,)),
+            self.gui.Layout((
+                self.gui.Button("Save as &HTML . . .", command=self.save),
+                self.gui.Button("&Close", command=lambda: self.window.close()),
+            )),
+        ))
+        #~ self.window.bind("<Return>", self.save)
+        
         self.entries = list()
         for entry in self:
             self.entries.append(entry)
-            output.add(values=entry)
+            output.add(entry)
         
-        buttons = Frame(self.window)
-        buttons.grid()
-        button = Button(buttons, text="Save as HTML . . .",
-            command=self.save, default="active")
-        button.grid(row=0, column=0)
-        button = Button(buttons, text="Close", command=self.window.destroy)
-        button.grid(row=0, column=1)
-        
-        output.tree.focus_set()
+        #~ buttons = Frame(self.window)
+        #~ buttons.grid()
+        #~ button = Button(buttons, text="Save as HTML . . .",
+            #~ command=self.save, default="active")
+        #~ button.grid(row=0, column=0)
+        #~ button.grid(row=0, column=1)
     
     def headings(self):
         headings = ["name", "common", "ex", "area", "grid"]
@@ -451,15 +452,14 @@ class join(object):
         
         print("""</table></body></html>""", file=file)
     
-    def save(self, event=None):
-        file = asksaveasfile(title="Save as HTML", parent=self.window,
-            filetypes=(
-                ("HTML", (".html", ".htm")),
-                ("All", ("*",)),
-            ))
+    def save(self):
+        file = self.gui.file_browse_open(
+            title="Save as HTML",
+            types=(("HTML", ("html", "htm")),),
+        )
         if not file:
             return
-        with file:
+        with open(file, "w") as file:
             self.write_html(self.entries, file)
 
 def print_tagged(tag, list, file):
