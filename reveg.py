@@ -56,39 +56,42 @@ Try "{} help"'''.format(arg, argv[0]))
         print("""\
 {TITLE}
 
-reveg.py ca ... [area ...] [freqs ... evc ...] [quad ...] [options] > output.html
-\tIncludes only those plants selected by the "area", "evc" and "quad"
-\toptions. Ignores plants with * and + origin, and ferns, orchids and
-\tmistletoes.
+Usage:\treveg.py ca ... [area ...] [freqs ... evc ...] [quad ...] [options]
+
+Includes only those plants selected by the "area", "evc" and "quad" options.
+Ignores plants with * and + origin, and ferns, orchids and mistletoes.
 
 Options:
-ca <{CA_DEFAULT}>
-\tCastlemaine plant list CSV file. Produce combined list based off this.
-freqs <{FREQ_DEFAULT}>
+ca <{CA}>
+\tCastlemaine plant list CSV file. Produce combined list based off
+\tthis.
+freqs <{FREQS}>
 \tEVC frequency plant list CSV file
 grid <octal code>
-\tOctal (binary) mask code of 10-minute grid references to highlight. The
-\tmatching grid code(s) are indicated in the list, but this does not
-\taffect whether a plant is selected in the list. A single grid code
-\thighlights plants in the corresponding grid area, independent of whether
-\tthey are also in any other grid areas. Multiple grid options means to
-\thighlight which of the provided grids a plants is from. 
+\tOctal (binary) mask code of 10-minute grid references to highlight.
+\tThe matching grid code(s) are indicated in the list, but this does
+\tnot affect whether a plant is selected in the list. A single grid
+\tcode highlights plants in the corresponding grid area, independent of
+\twhether they are also in any other grid areas. Multiple grid options
+\tmeans to highlight which of the provided grid areas a plants is from. 
 area <alphanumeric sequence>
 \tCastlemaine plant list area codes to include. More than one may be
-\tspecified as a string of codes or multiple options. The order does not
-\tmatter. The matching codes are indicated in the list.
+\tspecified as a string of codes or multiple options. The order does
+\tnot matter. The matching codes are indicated in the list.
 evc <name or number>
-\tInclude plants whose relative frequencies in EVC exceed threshold. Use
-\t"freqs" option alone to list EVCs. If the EVC does not exist (or is
-\tspelt wrong), the only indication is the corresponding output column is
-\tnot populated.
+\tInclude plants whose relative frequencies in EVC exceed threshold.
+\tUse "freqs" option alone to list EVCs. If the EVC does not exist (or
+\tis spelt wrong), the only indication is the corresponding output
+\tcolumn is not populated.
 quad <Viridans CSV file>
 \tInclude plants from Viridans quadrat. The "systematic format" is
-\tprobably better than the alphabetical because some types of plants are
-\tthen easily identified by the program and ignored.
+\tprobably better than the alphabetical because some types of plants
+\tare then easily identified by the program and ignored.
 thold <threshold>
-\tEVC frequency threshold (default: {THOLD_DEFAULT})
-help\tDisplay this help""".format(**locals()))
+\tEVC frequency threshold (default: {THOLD})
+help\tDisplay this help""".format(
+            TITLE=TITLE, CA=CA_DEFAULT, FREQS=FREQ_DEFAULT,
+            THOLD=THOLD_DEFAULT))
         return
     
     gui = guis.pick()
@@ -166,8 +169,8 @@ def validate_grid(value):
     
     return 0 <= value < 0o1000
 
-FREQ_DEFAULT = "GoldfieldsBrgnlEVCSppFreq.xls.csv"
-CA_DEFAULT = "PLANT_CA.TXT"
+FREQ_DEFAULT = "GoldfieldsBrgnlEVCSppFreq.xls"
+CA_DEFAULT = "cpl-14-04.xls"
 THOLD_DEFAULT = 0.3
 
 #class grid_menu(Toplevel):
