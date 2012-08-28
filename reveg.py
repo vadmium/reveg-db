@@ -248,7 +248,7 @@ class Quads(object):
         self.name = gui.Entry()
         self.file = FileEntry(gui,
             title="Find Viridans quadrat file",
-            types=(("CSV spreadsheet", ("csv",)),),
+            types=(("CSV spreadsheet", ("CSV",)),),
             delete=False,
         )
         self.list = gui.List(("Name", "File"), selected=self.selected)
