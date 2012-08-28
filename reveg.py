@@ -279,7 +279,11 @@ class Quads(object):
             self.list.remove(item)
     
     def selected(self):
-        (item,) = self.list.selection()
+        try:
+            (item,) = self.list.selection()
+        except ValueError:
+            # Don't do anything if not exactly one item is selected
+            return
         (name, file) = self.list.get(item)
         self.name.set(name)
         self.file.entry.set(file)
