@@ -278,7 +278,7 @@ class Quads(object):
         for item in reversed(self.list.selection()):
             self.list.remove(item)
     
-    def selected(self, item, selected):
+    def selected(self):
         (item,) = self.list.selection()
         (name, file) = self.list.get(item)
         self.name.set(name)
@@ -542,7 +542,7 @@ class Freqs(object):
             #~ self.evc_list.tree.see(selection[-1])
             #~ self.evc_list.tree.see(selection[0])
     
-    def selected(self, item, selected):
+    def selected(self):
         self.saved_evcs = list()
         for item in self.evc_list.selection():
             item = self.evc_list.get(item)
