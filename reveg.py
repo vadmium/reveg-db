@@ -291,7 +291,7 @@ class Quads(object):
     def get(self):
         files = list()
         names = list()
-        for item in range(self.list.count()):
+        for item in self.list:
             (name, file) = self.list.get(item)
             files.append(file)
             names.append(name)
