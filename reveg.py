@@ -456,7 +456,10 @@ class join(object):
         print("""\
 <!doctype html>
 <html>
-<head><meta charset=UTF-8></head>
+<head>
+  <meta charset=UTF-8>
+  <title>Automatically generated plant list</title>
+</head>
 <body><table>
   <tr>""", file=file)
         print_tagged("th", self.headings(), file)
