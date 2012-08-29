@@ -143,6 +143,9 @@ class Ui(object):
             self.quads.win_section,
             gui.Button("&Produce list . . .", command=self.join),
         ))
+        self.ca_file.set_parent(self.win)
+        self.freqs.file.set_parent(self.win)
+        self.quads.file.set_parent(self.win)
     
     def join(self):
         (evcs, evc_names) = self.freqs.get_evcs()
@@ -473,7 +476,7 @@ class join(object):
         print("""</table></body></html>""", file=file)
     
     def save(self):
-        file = self.gui.file_browse("save",
+        file = self.gui.file_browse("save", self.window,
             title="Save as HTML",
             types=(("HTML", ("html", "htm")),),
         )
@@ -592,8 +595,11 @@ class FileEntry(object):
             cells.append(gui.Button("Delete"))
         self.layout = gui.Layout(cells)
     
+    def set_parent(self, window):
+        self.parent = window
+    
     def browse(self):
-        file = self.gui.file_browse("open",
+        file = self.gui.file_browse("open", self.parent,
             title=self.title,
             types=self.types,
             file=self.entry.get(),
