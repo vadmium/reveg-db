@@ -1,5 +1,5 @@
 import csv
-from lib import Record
+from shorthand import Record
 
 def CaCsvReader(file):
     with open(file, newline="") as file:

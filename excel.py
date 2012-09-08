@@ -1,4 +1,4 @@
-from lib import Record
+from shorthand import Record
 from xlrd import open_workbook
 from xlrd import (XL_CELL_EMPTY, XL_CELL_BLANK)
 from numbers import Number

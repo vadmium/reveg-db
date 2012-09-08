@@ -1,4 +1,4 @@
-from lib import Function
+from misc import Function
 
 def pick():
     try:

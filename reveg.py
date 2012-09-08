@@ -6,7 +6,6 @@ from xml.sax import saxutils
 #~ from functools import partial
 from db import QuadratReader
 from contextlib import closing
-from lib import Record
 import guis
 
 TITLE = "Reveg DB version 0.2.0"
