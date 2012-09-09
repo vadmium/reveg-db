@@ -26,34 +26,46 @@ suite = TestSuite()
 def punct(self):
     """Punctuation should be ignored when comparing names"""
     
-    gui = TestGui()
-    with TemporaryDirectory(prefix="reveg") as dir:
-        cpl = path.join(dir, "cpl.csv")
-        with open(cpl, "w") as file:
-            file = csv.writer(file)
-            file.writerow((
-                "A bee var. cee", "", "Dummy common", "Family", None, "D",
-                "A", None, "000",
-            ))
-        
-        freqs = path.join(dir, "freqs.csv")
-        with open(freqs, "w") as file:
-            file = csv.writer(file)
-            file.writerows((
-                ("EVC", "BioregionNo", "Frequency", "NAME", "ORIGIN", "FAMILYNO", "DIVISION", "SPECNUM"),
-                (10, 0, 100, "A bee v cee", "", 0, 4, 0),
-            ))
-        
-        join = reveg.join(gui,
-            ca_file=cpl, grid=None, area="A",
-            freq_file=freqs, evcs=(10,), evc_names=("EVC",), freq_thold=0.5,
-            quads=(), quad_names=(),
-        )
-        join = tuple(join)
-    
+    join = run_join(
+        cpl=(("A bee var. cee", "A"),),
+        freqs=(("A bee v cee", 100),),
+    )
     self.assertEqual(join, (
         ["A bee var. cee", "Dummy common", "", "A", None, "1.00"],
     ))
+
+def run_join(cpl=(), freqs=()):
+    with TemporaryDirectory(prefix="reveg") as dir:
+        cplfile = path.join(dir, "cpl.csv")
+        with open(cplfile, "w") as file:
+            file = csv.writer(file)
+            for (name, areas) in cpl:
+                file.writerow((
+                    name, "", "Dummy common", "Family", None, "D",
+                    areas, None, "000",
+                ))
+        
+        freqfile = path.join(dir, "freqs.csv")
+        with open(freqfile, "w") as file:
+            file = csv.writer(file)
+            file.writerow((
+                "EVC", "BioregionNo", "Frequency", "NAME", "ORIGIN",
+                    "FAMILYNO", "DIVISION", "SPECNUM",
+            ))
+            for row in freqs:
+                (name, freq, *row) = row
+                if row:
+                    (origin,) = row
+                else:
+                    origin = ""
+                file.writerow((10, 0, freq, name, origin, 0, 4, 0))
+        
+        join = reveg.join(TestGui(),
+            ca_file=cplfile, grid=None, area="A",
+            freq_file=freqfile, evcs=(10,), evc_names=("EVC",), freq_thold=0.3,
+            quads=(), quad_names=(),
+        )
+        return tuple(join)
 
 class TestGui(object):
     def id(self, *pos, **kw):
