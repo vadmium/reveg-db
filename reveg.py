@@ -1,7 +1,6 @@
 #! /usr/bin/env python3
 
 from sys import (argv, stderr)
-from collections import defaultdict
 from xml.sax import saxutils
 #~ from functools import partial
 from db import QuadratReader
@@ -353,12 +352,7 @@ class join(object):
         return headings
     
     def __iter__(self):
-        class Plant(object):
-            def __init__(self):
-                self.ca = None
-                self.evcs = dict()
-                self.quads = dict()
-        plants = defaultdict(Plant)
+        plants = Plants()
         
         if self.ca_file is not None:
             if self.ca_file.endswith(".xls"):
@@ -450,7 +444,7 @@ class join(object):
             if not area and not thold_met and not any(inquads):
                 continue
             
-            res = [name, common, ex, area, grid] + rel
+            res = [plant.name, common, ex, area, grid] + rel
             res.extend("Y" if q else "" for q in inquads)
             yield res
     
@@ -483,6 +477,32 @@ class join(object):
             return
         with open(file, "w", encoding="UTF-8") as file:
             self.write_html(self.entries, file)
+
+class Plants(dict):
+    def __getitem__(self, name):
+        key = name.translate(NameSimplifier()).capitalize()
+        try:
+            return dict.__getitem__(self, key)
+        except LookupError:
+            plant = Plant(name)
+            self[key] = plant
+            return plant
+
+class NameSimplifier(object):
+    def __getitem__(self, cp):
+        cp = chr(cp)
+        if cp.isalnum():
+            return cp
+        if cp.isspace():
+            return 0x20
+        return None
+
+class Plant(object):
+    def __init__(self, name):
+        self.ca = None
+        self.evcs = dict()
+        self.quads = dict()
+        self.name = name
 
 def print_tagged(tag, list, file):
     for text in list:
@@ -623,9 +643,4 @@ if __name__ == "__main__":
     main()
 
 #Grid alias incl cmd line
-#Fuzzy text matching; full stops are not significant: var. = var; prefer without
-#@Ern: Some plants are abbreviated, minor problems worked around; eg:
-# Lomandra longifolia ssp longifol.
-# Dianella aff longifolia 'Benambra
-# Lomandra multiflora ssp multiflor
 #How to handle origin, exotic, AROTS, VROTS merging or multiple columns
