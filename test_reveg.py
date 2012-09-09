@@ -35,6 +35,28 @@ def punct(self):
             "1.00"],
     ))
 
+@suite_add(suite)
+@testfunc()
+def species(self):
+    """Include all entries for matching species"""
+    
+    join = run_join(
+        cpl=(
+            ("Danthonia", "A"),
+            ("Crassula decumbens var incumbents", ""),
+        ),
+        freqs=(
+            ("Danthonia s.l. spp.", 20),
+            ("Crassula decumbens var. decumbens", 100),
+        ),
+    )
+    self.assertEqual(join, (
+        ["Crassula decumbens var. decumbens", "", "", "", "", "1.00"],
+        ["Crassula decumbens var incumbents", "Dummy common", "", "", None, ""],
+        ["Danthonia", "Dummy common", "", "A", None, ""],
+        ["Danthonia s.l. spp.", "", "", "", "", "0.20"],
+    ))
+
 def run_join(cpl=(), freqs=()):
     with TemporaryDirectory(prefix="reveg") as dir:
         cplfile = path.join(dir, "cpl.csv")
