@@ -9,6 +9,19 @@ import guis
 
 TITLE = "Reveg DB version 0.2.0"
 
+abbr = dict(
+    aff="aff", affin="aff",
+    agg="agg",
+    f="f",
+    sect="sect",
+    sl="sl",
+    spp="spp", sp="spp",
+    ss="ss",
+    ssp="ssp", subsp="ssp",
+    var="var", v="var", vars="var",
+    x="x",
+)
+
 def main():
     help = False
     grid = 0o000
@@ -480,7 +493,15 @@ class join(object):
 
 class Plants(dict):
     def __getitem__(self, name):
-        key = name.translate(NameSimplifier()).capitalize()
+        key = name.translate(NameSimplifier()).capitalize().split()
+        for (i, element) in enumerate(key):
+            try:
+                element = abbr[element]
+            except LookupError:
+                pass
+            key[i] = element
+        key = " ".join(key)
+        
         try:
             return dict.__getitem__(self, key)
         except LookupError:
