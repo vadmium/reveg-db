@@ -107,7 +107,7 @@ help\tDisplay this help""".format(
             THOLD=THOLD_DEFAULT))
         return
     
-    gui = guis.pick()
+    gui = guis.probe()
     
     if ca_file is None and freq_file is None and not quads:
         Ui(gui, grid=grid, area=area, evcs=evcs, freq_thold=freq_thold)
