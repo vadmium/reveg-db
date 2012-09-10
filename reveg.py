@@ -15,6 +15,7 @@ abbr = dict(
     agg="agg",
     f="f",
     sect="sect",
+    sensu="sensu",
     sl="sl",
     spp="spp", sp="spp",
     ss="ss",
