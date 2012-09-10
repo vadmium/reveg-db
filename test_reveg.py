@@ -57,6 +57,34 @@ def species(self):
         ["Danthonia s.l. spp.", "", "", "", "", "0.20"],
     ))
 
+@suite_add(suite)
+@testfunc()
+def order(self):
+    """Tricky plant name ordering"""
+    
+    join = run_join(cpl=(
+        ('Dianella aff longifolia "Benambra"', "A"),
+        ("Dianella longifolia s.l.", "A"),
+        ("Typha domingensis", "A"),
+        ("Typha sp", "A"),
+    ),
+    freqs=(
+        ("Dianella longifolia", 2),
+        ("Dianella longifolia var. longifolia", 1),
+        ("Senecio sp. aff. tenuiflorus", 1),
+        ("Senecio tenuiflorus", 2),
+    ))
+    self.assertEqual(join, (
+        ["Dianella longifolia", "", "", "", "", "1.00"],
+        ["Dianella longifolia s.l.", "Dummy common", "", "A", None, ""],
+        ["Dianella longifolia var. longifolia", "", "", "", "", "0.50"],
+        ['Dianella aff longifolia "Benambra"', "Dummy common", "", "A", None, ""],
+        ["Senecio tenuiflorus", "", "", "", "", "1.00"],
+        ["Senecio sp. aff. tenuiflorus", "", "", "", "", "0.50"],
+        ["Typha sp", "Dummy common", "", "A", None, ""],
+        ["Typha domingensis", "Dummy common", "", "A", None, ""],
+    ))
+
 def run_join(cpl=(), freqs=()):
     with TemporaryDirectory(prefix="reveg") as dir:
         cplfile = path.join(dir, "cpl.csv")
