@@ -24,14 +24,15 @@ suite = TestSuite()
 @suite_add(suite)
 @testfunc()
 def punct(self):
-    """Punctuation should be ignored when comparing names"""
+    """Merge data with varying punctuation and abbreviations"""
     
     join = run_join(
-        cpl=(("A bee var. cee", "A"),),
-        freqs=(("A bee v cee", 100),),
+        cpl=(("Acacia lanigera var. whanii", "A"),),
+        freqs=(("Acacia lanigera v whanii", 100),),
     )
     self.assertEqual(join, (
-        ["A bee var. cee", "Dummy common", "", "A", None, "1.00"],
+        ["Acacia lanigera var. whanii", "Dummy common", "", "A", None,
+            "1.00"],
     ))
 
 def run_join(cpl=(), freqs=()):
