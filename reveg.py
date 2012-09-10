@@ -6,6 +6,7 @@ from xml.sax import saxutils
 from db import QuadratReader
 from contextlib import closing
 import guis
+from functools import total_ordering
 
 TITLE = "Reveg DB version 0.2.0"
 
@@ -365,6 +366,7 @@ class join(object):
         return headings
     
     def __iter__(self):
+        # Read all likely plants from all sources
         plants = Plants()
         
         if self.ca_file is not None:
@@ -423,43 +425,67 @@ class join(object):
                         continue
                     plants[plant.name].quads[quad_file] = plant
         
-        for name in sorted(plants.keys()):
-            plant = plants[name]
+        # For each species group in order, see if any plants match the
+        # criteria. If so, output all plants in the species group in order.
+        for species in sorted(plants.species.keys()):
+            species = plants.species[species]
             
-            if plant.ca is None:
-                common = ""
-                ex = ""
-                area = ""
-                grid = ""
-            else:
-                common = plant.ca.common
-                ex = plant.ca.ex
-                area = "".join(a for a in plant.ca.area if a in self.area)
-                if plant.ca.grid:
-                    grid = format(int(plant.ca.grid, 8) & self.grid, "03o")
-                else:
-                    grid = plant.ca.grid
-            
-            rel = list()
-            thold_met = False
-            for evc in self.evcs:
-                try:
-                    evc_plant = plant.evcs[evc]
-                except LookupError:
-                    rel.append("")
-                else:
+            for plant in species:
+                if plant.ca is not None and any(
+                a in self.area for a in plant.ca.area):
+                    break
+                
+                for evc in self.evcs:
+                    try:
+                        evc_plant = plant.evcs[evc]
+                    except LookupError:
+                        continue
                     freq = evc_plant["Frequency"] / max_freq[evc]
-                    thold_met = thold_met or freq >= self.freq_thold
-                    rel.append(format(freq, ".2f"))
+                    if freq >= self.freq_thold:
+                        thold_met = True
+                        break
+                else:
+                    thold_met = False
+                if thold_met:
+                    break
+                
+                if any(quad in plant.quads for quad in self.quads):
+                    break
             
-            inquads = tuple(quad in plant.quads for quad in self.quads)
-            
-            if not area and not thold_met and not any(inquads):
+            else:
                 continue
             
-            res = [plant.name, common, ex, area, grid] + rel
-            res.extend("Y" if q else "" for q in inquads)
-            yield res
+            species.sort()
+            for plant in species:
+                if plant.ca is None:
+                    common = ""
+                    ex = ""
+                    area = ""
+                    grid = ""
+                else:
+                    common = plant.ca.common
+                    ex = plant.ca.ex
+                    area = "".join(a for a in plant.ca.area if a in self.area)
+                    if plant.ca.grid:
+                        grid = format(int(plant.ca.grid, 8) & self.grid, "03o")
+                    else:
+                        grid = plant.ca.grid
+                
+                rel = list()
+                for evc in self.evcs:
+                    try:
+                        evc_plant = plant.evcs[evc]
+                    except LookupError:
+                        rel.append("")
+                    else:
+                        freq = evc_plant["Frequency"] / max_freq[evc]
+                        rel.append(format(freq, ".2f"))
+                
+                inquads = (quad in plant.quads for quad in self.quads)
+                
+                res = [plant.name, common, ex, area, grid] + rel
+                res.extend("Y" if q else "" for q in inquads)
+                yield res
     
     def write_html(self, entries, file):
         print("""\
@@ -492,21 +518,42 @@ class join(object):
             self.write_html(self.entries, file)
 
 class Plants(dict):
+    """Indexes plants by canonical name, and groups them by species"""
+    
+    def __init__(self):
+        # Main list has keys like (("Dianella",), ("aff", "longifolia"))
+        dict.__init__(self)
+        self.species = dict()
+    
     def __getitem__(self, name):
-        key = name.translate(NameSimplifier()).capitalize().split()
-        for (i, element) in enumerate(key):
-            try:
-                element = abbr[element]
-            except LookupError:
-                pass
-            key[i] = element
-        key = " ".join(key)
+        words = name.translate(NameSimplifier()).lower().split()
+        key = list()
+        
+        i = 0
+        while i < len(words):
+            element = i
+            while i < len(words):
+                word = words[i]
+                i += 1
+                try:
+                    words[i - 1] = abbr[word]
+                except LookupError:
+                    break
+            key.append(tuple(words[element:i]))
+        key = tuple(key)
         
         try:
             return dict.__getitem__(self, key)
         except LookupError:
-            plant = Plant(name)
+            plant = Plant(name, key)
             self[key] = plant
+            
+            # Species key: first two names, ignoring all descriptors
+            key = tuple(name[0] for name in plant.key[:2])
+            if not key[-1]:
+                key = key[:-1]
+            self.species.setdefault(key, list()).append(plant)
+            
             return plant
 
 class NameSimplifier(object):
@@ -518,12 +565,27 @@ class NameSimplifier(object):
             return 0x20
         return None
 
+@total_ordering
 class Plant(object):
-    def __init__(self, name):
+    def __init__(self, name, key):
         self.ca = None
         self.evcs = dict()
         self.quads = dict()
         self.name = name
+        
+        self.key = list()
+        for name in key:
+            if name[-1] not in abbr:
+                self.key.append(name[-1:] + name[:-1])
+            else:
+                self.key.append(("",) + name)
+        self.key = tuple(self.key)
+    
+    def __eq__(self, other):
+        return self.key == other.key
+    
+    def __lt__(self, other):
+        return self.key < other.key
 
 def print_tagged(tag, list, file):
     for text in list:
