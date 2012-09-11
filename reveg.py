@@ -8,7 +8,7 @@ from contextlib import closing
 import guis
 from functools import total_ordering
 
-TITLE = "Reveg DB version 0.2.0"
+TITLE = "Reveg DB version 0.3.0"
 
 abbr = dict(
     aff="aff", affin="aff",
