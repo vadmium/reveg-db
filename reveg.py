@@ -145,13 +145,13 @@ class Ui(object):
         
         #button.grid(columnspan=4)
         
-        self.win = self.gui.Window(title=TITLE, sections=(
-            dict(label="&Castlemaine plant list", fields=(
-                dict(label="Source file", field=self.ca_file.layout),
-                dict(label="Highlight &grid sections",
-                    field=gui.Layout((self.grid, grid_button))),
-                dict(label="Select &areas", field=self.area),
-            )),
+        self.win = self.gui.Window(title=TITLE, contents=self.gui.Form(
+            self.gui.Section("&Castlemaine plant list",
+                self.gui.Field("Source file", self.ca_file.layout),
+                self.gui.Field("Highlight &grid sections",
+                    self.gui.Inline(self.grid, grid_button)),
+                self.gui.Field("Select &areas", self.area),
+            ),
             self.freqs.win_section,
             self.quads.win_section,
             gui.Button("&Produce list . . .", command=self.join),
@@ -269,15 +269,15 @@ class Quads(object):
         )
         self.list = gui.List(("Name", "File"), selected=self.selected)
         
-        self.win_section = dict(label="Viridans &quadrats", fields=(
-            dict(label="Name", field=self.name),
-            dict(label="Source file", access="V", field=self.file.layout),
-            gui.Layout((
+        self.win_section = gui.Section("Viridans &quadrats",
+            gui.Field("Name", self.name),
+            gui.Field("Source file", self.file.layout, access="V"),
+            gui.Inline(
                 gui.Button("Add", command=self.add),
                 gui.Button("Remove", command=self.remove),
-            )),
+            ),
             self.list,
-        ))
+        )
     
     def add(self):
         item = self.list.add((self.name.get(), self.file.entry.get(),))
@@ -339,13 +339,15 @@ class join(object):
         headings = self.headings()
         output = self.gui.List(headings)
         
-        self.window = self.gui.Window(parent, title="Plant list", sections=(
-            dict(label=None, fields=(output,)),
-            self.gui.Layout((
+        form = self.gui.Form(
+            output,
+            self.gui.Inline(
                 self.gui.Button("Save as &HTML . . .", command=self.save),
                 self.gui.Button("&Close", command=lambda: self.window.close()),
-            )),
-        ))
+            ),
+        )
+        self.window = self.gui.Window(parent, title="Plant list",
+            contents=form)
         #~ self.window.bind("<Return>", self.save)
         
         self.entries = list()
@@ -615,11 +617,11 @@ class Freqs(object):
 #            validatecommand=vcmd)
         self.thold = gui.Entry(str(thold))
         
-        self.win_section = dict(label="EVC &frequencies", fields=(
-            dict(label="Source file", field=self.file.layout),
-            dict(label="Select &EVCs", field=self.evc_list),
-            dict(label="Frequency &threshold", field=self.thold),
-        ))
+        self.win_section = gui.Section("EVC &frequencies",
+            gui.Field("Source file", self.file.layout),
+            gui.Field("Select &EVCs", self.evc_list),
+            gui.Field("Frequency &threshold", self.thold),
+        )
     
     def update(self):
         self.evc_list.clear()
@@ -693,10 +695,14 @@ class FileEntry(object):
         self.entry = gui.Entry(default)
         #~ Button(field, text="Delete", command=partial(file.set, "")).pack(
             #~ side=tkinter.LEFT)
-        cells = [self.entry, gui.Button("Browse", command=self.browse)]
         if delete:
-            cells.append(gui.Button("Delete"))
-        self.layout = gui.Layout(cells)
+            delete = (gui.Button("Delete"),)
+        else:
+            delete = ()
+        self.layout = gui.Inline(
+            self.entry,
+            gui.Button("Browse", command=self.browse),
+        *delete)
     
     def set_parent(self, window):
         self.parent = window
