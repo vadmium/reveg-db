@@ -1,5 +1,5 @@
 import csv
-from shorthand import Record
+from shorthand import SimpleNamespace
 
 def CaCsvReader(file):
     with open(file, newline="") as file:
@@ -28,7 +28,7 @@ def QuadratReader(file):
     with open(file, newline="") as file:
         file = csv.reader(file)
         next(file)
-        extra = Record()
+        extra = SimpleNamespace()
         for row in file:
             if tuple(row) == ("Scientific Name", "Common Name"):
                 continue
@@ -55,8 +55,9 @@ def QuadratReader(file):
             
             yield record
 
-def tuple_record(record, fields, empty):
-    record = Record(zip(parse_fields(fields), record))
+def tuple_record(values, fields, empty):
+    record = SimpleNamespace()
+    record.__dict__.update(zip(parse_fields(fields), values))
     convert_none_skip(record.__dict__, empty)
     return record
 

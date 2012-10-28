@@ -1,4 +1,4 @@
-from shorthand import Record
+from shorthand import SimpleNamespace
 from xlrd import open_workbook
 from xlrd import (XL_CELL_EMPTY, XL_CELL_BLANK)
 from numbers import Number
@@ -62,7 +62,7 @@ def CplExcelReader(file):
                     )
                     continue
                 
-                plant = Record(extra)
+                plant = SimpleNamespace(**extra)
                 for (name, col) in fields.items():
                     value = excel_value(sheet, row, col)
                     if isinstance(value, Number):

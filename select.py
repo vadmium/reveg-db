@@ -7,9 +7,9 @@ from db import (CaCsvReader, CplExcelReader)
 from db import (FreqCsvReader, FreqExcelReader)
 from db import QuadratReader
 from contextlib import closing
-from lib import Record
 import tkinter
 from db import (tuple_record, parse_fields)
+from shorthand import SimpleNamespace
 
 def main(*, ca_csv=(), cpl_excel=(), freqs=(), freqs_csv=(), quad=()):
     root = Tk()
@@ -26,7 +26,7 @@ def main(*, ca_csv=(), cpl_excel=(), freqs=(), freqs_csv=(), quad=()):
     for file in cpl_excel:
         with closing(CplExcelReader(file)) as file:
             for plant in file:
-                family = Record(name=None, common=None)
+                family = SimpleNamespace(name=None, common=None)
                 family = getattr(plant, "family", family)
                 ui.add(
                     origin=plant.ex,
@@ -56,17 +56,17 @@ class Ui(object):
         window.title("Plant list")
         
         self.list = ScrolledTree(window, tree=False, columns=(
-            Record(heading="Origin", width=1),
-            Record(heading="Name", width=20, stretch=True),
-            Record(heading="Authority", width=6),
-            Record(heading="Common name", width=15),
-            Record(heading="Family", width=(3, ScrolledTree.FIGURE)),
-            Record(heading="Family", width=8),
-            Record(heading="Family", width=6),
-            Record(heading="Division", width=(1, ScrolledTree.FIGURE)),
-            Record(heading="Division", width=6),
-            Record(heading="Note", width=3),
-            Record(heading="SPECNUM", width=(4, ScrolledTree.FIGURE)),
+            dict(heading="Origin", width=1),
+            dict(heading="Name", width=20, stretch=True),
+            dict(heading="Authority", width=6),
+            dict(heading="Common name", width=15),
+            dict(heading="Family", width=(3, ScrolledTree.FIGURE)),
+            dict(heading="Family", width=8),
+            dict(heading="Family", width=6),
+            dict(heading="Division", width=(1, ScrolledTree.FIGURE)),
+            dict(heading="Division", width=6),
+            dict(heading="Note", width=3),
+            dict(heading="SPECNUM", width=(4, ScrolledTree.FIGURE)),
         ))
         self.list.pack(fill=tkinter.BOTH, expand=True)
         self.list.tree.focus_set()
@@ -78,13 +78,12 @@ class Ui(object):
             origin, name, auth, common, famnum, family, fam_com,
             divnum, group, note, specnum
         """
-        record = Record(kw)
-        
+        name = kw["name"]
         try:
-            item = self.items[record.name]
+            item = self.items[name]
         except LookupError:
             item = self.list.add()
-            self.items[record.name] = item
+            self.items[name] = item
         
         current = self.list.tree.item(item, option="values")
         current = tuple_record(current, fields, """origin""")
@@ -93,7 +92,7 @@ class Ui(object):
         fields = parse_fields(fields)
         for field in fields:
             if getattr(current, field, None) is None:
-                value = getattr(record, field, None)
+                value = kw.get(field)
                 if value is None:
                     if field == "origin":
                         value = "?"
