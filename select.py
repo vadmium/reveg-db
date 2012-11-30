@@ -1,10 +1,10 @@
 #! /usr/bin/env python3
 
 from tkinter import Tk
-from lib.tk import ScrolledTree
+from tkwrap import ScrolledTree
 from sys import argv
-from db import (CaCsvReader, CplExcelReader)
-from db import (FreqCsvReader, FreqExcelReader)
+from db import (CaCsvReader, FreqCsvReader)
+from excel import (CplExcelReader, FreqExcelReader)
 from db import QuadratReader
 from contextlib import closing
 import tkinter
@@ -115,5 +115,6 @@ class Ui(object):
                         specnum=plant["SPECNUM"]
                     )
 
-from lib import run_main
-run_main(__name__)
+if __name__ == "__main__":
+    from funcparams import command
+    command()
