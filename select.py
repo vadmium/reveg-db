@@ -9,7 +9,6 @@ from db import QuadratReader
 from contextlib import closing
 import tkinter
 from db import (tuple_record, parse_fields)
-from shorthand import SimpleNamespace
 
 def main(*, ca_csv=(), cpl_excel=(), freqs=(), freqs_csv=(), quad=()):
     root = Tk()
@@ -26,12 +25,10 @@ def main(*, ca_csv=(), cpl_excel=(), freqs=(), freqs_csv=(), quad=()):
     for file in cpl_excel:
         with closing(CplExcelReader(file)) as file:
             for plant in file:
-                family = SimpleNamespace(name=None, common=None)
-                family = getattr(plant, "family", family)
                 ui.add(
                     origin=plant.ex,
                     name=plant.name, common=plant.common,
-                    family=family.name, fam_com=family.common,
+                    family=plant.family, fam_com=plant.fam_com,
                     group=getattr(plant, "group", None),
                     note=plant.note,
                 )
