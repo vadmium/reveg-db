@@ -13,7 +13,7 @@ TITLE = "Reveg DB version 0.3.0"
 abbr = dict(
     aff="aff", affin="aff",
     agg="agg",
-    f="f",
+    f="f", forma="f",
     sect="sect",
     sensu="sensu",
     sl="sl",
@@ -534,15 +534,25 @@ class Plants(dict):
         
         i = 0
         while i < len(words):
-            element = i
+            desc = i
             while i < len(words):
                 word = words[i]
-                i += 1
                 try:
-                    words[i - 1] = abbr[word]
+                    words[i] = abbr[word]
                 except LookupError:
                     break
-            key.append(tuple(words[element:i]))
+                i += 1
+            desc = tuple(words[desc:i])
+            
+            # If the element is of the form (desc desc name), put the name
+            # part first in the key so that it has higher sorting priority
+            try:
+                element = (words[i],) + desc
+                i += 1
+            except IndexError:
+                element = ("",) + desc
+            
+            key.append(element)
         key = tuple(key)
         
         try:
@@ -552,9 +562,13 @@ class Plants(dict):
             self[key] = plant
             
             # Species key: first two names, ignoring all descriptors
-            key = tuple(name[0] for name in plant.key[:2])
+            key = tuple(name[0] for name in key[:2])
+            
+            # If the last part of the key is a descriptor without a name,
+            # truncate it from the key. Eg: (name) (spp agg) => (name)
             if not key[-1]:
                 key = key[:-1]
+            
             self.species.setdefault(key, list()).append(plant)
             
             return plant
@@ -575,14 +589,7 @@ class Plant(object):
         self.evcs = dict()
         self.quads = dict()
         self.name = name
-        
-        self.key = list()
-        for name in key:
-            if name[-1] not in abbr:
-                self.key.append(name[-1:] + name[:-1])
-            else:
-                self.key.append(("",) + name)
-        self.key = tuple(self.key)
+        self.key = key
     
     def __eq__(self, other):
         return self.key == other.key
