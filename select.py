@@ -9,42 +9,19 @@ from db import QuadratReader
 from contextlib import closing
 import tkinter
 from db import (tuple_record, parse_fields)
+from operator import attrgetter
 
 def main(*, ca_csv=(), cpl_excel=(), freqs=(), freqs_csv=(), quad=()):
     root = Tk()
     ui = Ui(root)
     
-    for file in ca_csv:
-        with closing(CaCsvReader(file)) as file:
-            for plant in file:
-                ui.add(
-                    origin=plant.ex, name=plant.name, common=plant.common,
-                    family=plant.family, fam_com=plant.fam_com,
-                    group=plant.group, note=plant.note
-                )
-    for file in cpl_excel:
-        with closing(CplExcelReader(file)) as file:
-            for plant in file:
-                ui.add(
-                    origin=plant.ex,
-                    name=plant.name, common=plant.common,
-                    family=plant.family, fam_com=plant.fam_com,
-                    group=getattr(plant, "group", None),
-                    note=plant.note,
-                )
+    ui.add_files(CaCsvReader, ca_csv, convert_cpl)
+    ui.add_files(CplExcelReader, cpl_excel, convert_cpl)
+    ui.add_files(FreqExcelReader, freqs, convert_freqs)
+    ui.add_files(FreqCsvReader, freqs_csv, convert_freqs)
+    ui.add_files(QuadratReader, quad)
     
-    ui.add_freqs(FreqExcelReader, freqs)
-    ui.add_freqs(FreqCsvReader, freqs_csv)
     
-    for file in quad:
-        with closing(QuadratReader(file)) as file:
-            for plant in file:
-                ui.add(
-                    origin=plant.origin,
-                    name=plant.name, common=plant.common,
-                    family=getattr(plant, "family", None),
-                    group=getattr(plant, "group", None)
-                )
     
     root.mainloop()
 
@@ -70,12 +47,18 @@ class Ui(object):
         
         self.items = dict()
     
-    def add(self, **kw):
+    def add_files(self, Reader, files, convert=attrgetter("__dict__")):
+        for file in files:
+            with closing(Reader(file)) as file:
+                for plant in file:
+                    self.add_plant(convert(plant))
+    
+    def add_plant(self, plant):
         fields = """
             origin, name, auth, common, famnum, family, fam_com,
             divnum, group, note, specnum
         """
-        name = kw["name"]
+        name = plant["name"]
         try:
             item = self.items[name]
         except LookupError:
@@ -89,7 +72,7 @@ class Ui(object):
         fields = parse_fields(fields)
         for field in fields:
             if getattr(current, field, None) is None:
-                value = kw.get(field)
+                value = plant.get(field)
                 if value is None:
                     if field == "origin":
                         value = "?"
@@ -98,19 +81,21 @@ class Ui(object):
                 setattr(current, field, value)
         self.list.tree.item(item,
             values=tuple(getattr(current, field) for field in fields))
-    
-    def add_freqs(self, Reader, files):
-        for file in files:
-            with closing(Reader(file)) as file:
-                for plant in file:
-                    self.add(
-                        origin=plant["ORIGIN"],
-                        name=plant["NAME"], auth=plant["AUTHORITY"],
-                        common=plant["COMMONNAME"],
-                        famnum=plant["FAMILYNO"], family=plant["FAMILYNAME"],
-                        divnum=plant["DIVISION"], group=plant["DivisionText"],
-                        specnum=plant["SPECNUM"]
-                    )
+
+def convert_cpl(plant):
+    plant = plant.__dict__
+    plant["origin"] = plant["ex"]
+    return plant
+
+def convert_freqs(plant):
+    return dict(
+        origin=plant["ORIGIN"],
+        name=plant["NAME"], auth=plant["AUTHORITY"],
+        common=plant["COMMONNAME"],
+        famnum=plant["FAMILYNO"], family=plant["FAMILYNAME"],
+        divnum=plant["DIVISION"], group=plant["DivisionText"],
+        specnum=plant["SPECNUM"]
+    )
 
 if __name__ == "__main__":
     from funcparams import command
