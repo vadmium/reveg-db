@@ -1,6 +1,20 @@
 import csv
 from shorthand import SimpleNamespace
 
+abbr = dict(
+    aff="aff", affin="aff",
+    agg="agg",
+    f="f", forma="f",
+    sect="sect",
+    sensu="sensu",
+    sl="sl",
+    spp="spp", sp="spp",
+    ss="ss",
+    ssp="ssp", subsp="ssp",
+    var="var", v="var", vars="var",
+    x="x",
+)
+
 def CaCsvReader(file):
     with open(file, newline="") as file:
         for plant in csv.reader(file):
@@ -74,3 +88,39 @@ def convert_none(record, fields):
 
 def parse_fields(str):
     return str.replace(",", " ").split()
+
+def plant_key(name):
+    words = name.translate(NameSimplifier()).lower().split()
+    key = list()
+    
+    i = 0
+    while i < len(words):
+        desc = i
+        while i < len(words):
+            word = words[i]
+            try:
+                words[i] = abbr[word]
+            except LookupError:
+                break
+            i += 1
+        desc = tuple(words[desc:i])
+        
+        # If the element is of the form (desc desc name), put the name
+        # part first in the key so that it has higher sorting priority
+        try:
+            element = (words[i],) + desc
+            i += 1
+        except IndexError:
+            element = ("",) + desc
+        
+        key.append(element)
+    return tuple(key)
+
+class NameSimplifier(object):
+    def __getitem__(self, cp):
+        cp = chr(cp)
+        if cp.isalnum():
+            return cp
+        if cp.isspace():
+            return 0x20
+        return None

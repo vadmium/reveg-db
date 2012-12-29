@@ -7,22 +7,9 @@ from db import QuadratReader
 from contextlib import closing
 import guis
 from functools import total_ordering
+from db import plant_key
 
 TITLE = "Reveg DB version 0.3.0"
-
-abbr = dict(
-    aff="aff", affin="aff",
-    agg="agg",
-    f="f", forma="f",
-    sect="sect",
-    sensu="sensu",
-    sl="sl",
-    spp="spp", sp="spp",
-    ss="ss",
-    ssp="ssp", subsp="ssp",
-    var="var", v="var", vars="var",
-    x="x",
-)
 
 def main():
     help = False
@@ -529,32 +516,7 @@ class Plants(dict):
         self.species = dict()
     
     def __getitem__(self, name):
-        words = name.translate(NameSimplifier()).lower().split()
-        key = list()
-        
-        i = 0
-        while i < len(words):
-            desc = i
-            while i < len(words):
-                word = words[i]
-                try:
-                    words[i] = abbr[word]
-                except LookupError:
-                    break
-                i += 1
-            desc = tuple(words[desc:i])
-            
-            # If the element is of the form (desc desc name), put the name
-            # part first in the key so that it has higher sorting priority
-            try:
-                element = (words[i],) + desc
-                i += 1
-            except IndexError:
-                element = ("",) + desc
-            
-            key.append(element)
-        key = tuple(key)
-        
+        key = plant_key(name)
         try:
             return dict.__getitem__(self, key)
         except LookupError:
@@ -572,15 +534,6 @@ class Plants(dict):
             self.species.setdefault(key, list()).append(plant)
             
             return plant
-
-class NameSimplifier(object):
-    def __getitem__(self, cp):
-        cp = chr(cp)
-        if cp.isalnum():
-            return cp
-        if cp.isspace():
-            return 0x20
-        return None
 
 @total_ordering
 class Plant(object):
