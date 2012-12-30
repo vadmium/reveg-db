@@ -680,15 +680,6 @@ class FileEntry(object):
         if self.command:
             self.command()
 
-def ValidateCommand(tk, func):
-    """Help get the new value for input validation
-    
-    Hinted by Michael Lange, "Validating an entry":
-    http://mail.python.org/pipermail/tkinter-discuss/2006-August/000863.html
-    """
-    
-    return (tk.register(func), "%P")
-
 if __name__ == "__main__":
     main()
 
