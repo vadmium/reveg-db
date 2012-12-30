@@ -90,7 +90,7 @@ def parse_fields(str):
     return str.replace(",", " ").split()
 
 def plant_key(name):
-    words = name.translate(NameSimplifier()).lower().split()
+    words = name.translate(NameSimplifier()).split()
     key = list()
     
     i = 0
@@ -120,7 +120,7 @@ class NameSimplifier(object):
     def __getitem__(self, cp):
         cp = chr(cp)
         if cp.isalnum():
-            return cp
+            return cp.lower()
         if cp.isspace():
             return 0x20
         return None
