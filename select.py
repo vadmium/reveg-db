@@ -10,6 +10,7 @@ from contextlib import closing
 import tkinter
 from db import (tuple_record, parse_fields)
 from operator import attrgetter
+from sys import stderr
 
 def main(*, ca_csv=(), cpl_excel=(), freqs=(), freqs_csv=(), quad=()):
     root = Tk()
@@ -46,12 +47,16 @@ class Ui(object):
         self.list.tree.focus_set()
         
         self.items = dict()
+        self.records = 0
     
     def add_files(self, Reader, files, convert=attrgetter("__dict__")):
         for file in files:
+            print("Reading", file, file=stderr)
             with closing(Reader(file)) as file:
                 for plant in file:
                     self.add_plant(convert(plant))
+            self.print_count()
+            print(file=stderr)
     
     def add_plant(self, plant):
         fields = """
@@ -81,6 +86,14 @@ class Ui(object):
                 setattr(current, field, value)
         self.list.tree.item(item,
             values=tuple(getattr(current, field) for field in fields))
+        
+        self.records += 1
+        if not self.records % 200:
+            self.print_count()
+    
+    def print_count(self):
+        print("Records:", self.records, "Plants:", len(self.items), end="\r",
+            file=stderr)
 
 def convert_cpl(plant):
     plant = plant.__dict__
