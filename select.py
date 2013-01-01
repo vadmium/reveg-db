@@ -10,6 +10,7 @@ from contextlib import closing
 import tkinter
 from db import (tuple_record, parse_fields)
 from operator import attrgetter
+from db import plant_key
 from sys import stderr
 
 def main(*, ca_csv=(), cpl_excel=(), freqs=(), freqs_csv=(), quad=()):
@@ -22,6 +23,8 @@ def main(*, ca_csv=(), cpl_excel=(), freqs=(), freqs_csv=(), quad=()):
     ui.add_files(FreqCsvReader, freqs_csv, convert_freqs)
     ui.add_files(QuadratReader, quad)
     
+    for (i, (_, item)) in enumerate(sorted(ui.items.items())):
+        ui.list.tree.move(item, "", i)
     
     
     root.mainloop()
@@ -63,12 +66,12 @@ class Ui(object):
             origin, name, auth, common, famnum, family, fam_com,
             divnum, group, note, specnum
         """
-        name = plant["name"]
+        key = plant_key(plant["name"])
         try:
-            item = self.items[name]
+            item = self.items[key]
         except LookupError:
             item = self.list.add()
-            self.items[name] = item
+            self.items[key] = item
         
         current = self.list.tree.item(item, option="values")
         current = tuple_record(current, fields, """origin""")
