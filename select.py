@@ -52,7 +52,7 @@ def main(*, ca_csv=(), cpl_excel=(), freqs=(), freqs_csv=(), quad=()):
     ui.entry.bind("<Up>", partial(ui.select_match, "prev"))
     ui.entry.bind("<Down>", partial(ui.select_match, "next"))
     
-    ui.matches = ScrolledTree(win, tree=False,
+    ui.matches = ScrolledTree(win, tree=False, resize=True,
         columns=(dict(heading="Matches", width=30),))
     ui.matches.pack(fill=tkinter.BOTH, expand=True)
     
@@ -62,7 +62,7 @@ class Ui(object):
     def __init__(self, window):
         window.title("Reference list")
         
-        self.list = ScrolledTree(window, tree=False, columns=(
+        self.list = ScrolledTree(window, tree=False, resize=True, columns=(
             dict(heading="Origin", width=1),
             dict(heading="Name", width=20, stretch=True),
             dict(heading="Authority", width=6),
