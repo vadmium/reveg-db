@@ -2,7 +2,6 @@
 
 from tkinter import Tk
 from tkwrap import ScrolledTree
-from sys import argv
 from db import (CaCsvReader, FreqCsvReader)
 from excel import (CplExcelReader, FreqExcelReader)
 from db import QuadratReader

@@ -24,12 +24,7 @@ def main():
     
     i = iter(argv)
     next(i)
-    while True:
-        try:
-            arg = next(i)
-        except StopIteration:
-            break
-        
+    for arg in i:
         lower = arg.lower()
         if lower in {"help", "-h", "--help", "-?", "?"}:
             help = True
@@ -646,7 +641,7 @@ class Freqs(object):
 class FileEntry(object):
     def __init__(self, gui, default=None, *,
     types, title=None, command=None, delete=True):
-        self.gui =  gui
+        self.gui = gui
         self.types = types
         self.title = title
         self.command = command
