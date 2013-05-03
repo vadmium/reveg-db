@@ -101,7 +101,7 @@ help\tDisplay this help""".format(
     
     gui.msg_loop()
 
-class Ui(object):
+class Ui(guis.Window):
     def __init__(self, gui, grid, area, evcs, freq_thold):
         self.gui = gui
         
@@ -111,40 +111,40 @@ class Ui(object):
         )
         
         #self.grid = StringVar(value=format(grid, "03o"))
-        self.grid = self.gui.Entry(format(grid, "03o"))
+        self.grid = guis.Entry(format(grid, "03o"))
         #entry = Entry(field, textvariable=self.grid, validate="key",
         #    validatecommand=ValidateCommand(self.root, validate_grid))
         #entry.pack(side=tkinter.LEFT, expand=True, fill=tkinter.X)
         #grid_button = partial(grid_menu, self.grid, field)
-        grid_button = gui.Button("Menu . . .")
+        grid_button = guis.Button("Menu . . .")
         
         #self.area = StringVar(value="".join(area))
-        self.area = self.gui.Entry("".join(area))
+        self.area = guis.Entry("".join(area))
         
-        self.freqs = Freqs(self.gui, evcs=evcs, thold=freq_thold)
-        self.quads = Quads(self.gui)
+        self.freqs = Freqs(gui, evcs=evcs, thold=freq_thold)
+        self.quads = Quads(gui)
         
         #button.grid(columnspan=4)
         
-        self.win = self.gui.Window(title=TITLE, contents=self.gui.Form(
-            self.gui.Section("&Castlemaine plant list",
-                self.gui.Field("Source file", self.ca_file.layout),
-                self.gui.Field("Highlight &grid sections",
-                    self.gui.Inline(self.grid, grid_button)),
-                self.gui.Field("Select &areas", self.area),
+        guis.Window.__init__(self, gui, title=TITLE, contents=guis.Form(
+            guis.Section("&Castlemaine plant list",
+                guis.Field("Source file", self.ca_file.layout),
+                guis.Field("Highlight &grid sections",
+                    guis.Inline(self.grid, grid_button)),
+                guis.Field("Select &areas", self.area),
             ),
             self.freqs.win_section,
             self.quads.win_section,
-            gui.Button("&Produce list . . .", command=self.join),
+            guis.Button("&Produce list . . .", command=self.join),
         ))
-        self.ca_file.set_parent(self.win)
-        self.freqs.file.set_parent(self.win)
-        self.quads.file.set_parent(self.win)
+        self.ca_file.set_parent(self)
+        self.freqs.file.set_parent(self)
+        self.quads.file.set_parent(self)
     
     def join(self):
         (evcs, evc_names) = self.freqs.get_evcs()
         (quad_files, quad_names) = self.quads.get()
-        join(self.gui, self.win,
+        join(self.gui, self,
             ca_file=self.ca_file.entry.get() or None,
             grid=int(self.grid.get(), 8),
             area=self.area.get(),
@@ -242,20 +242,20 @@ THOLD_DEFAULT = 0.3
 
 class Quads(object):
     def __init__(self, gui):
-        self.name = gui.Entry()
+        self.name = guis.Entry()
         self.file = FileEntry(gui,
             title="Find Viridans quadrat file",
             types=(("CSV spreadsheet", ("CSV",)),),
             delete=False,
         )
-        self.list = gui.List(("Name", "File"), selected=self.selected)
+        self.list = guis.List(("Name", "File"), selected=self.selected)
         
-        self.win_section = gui.Section("Viridans &quadrats",
-            gui.Field("Name", self.name),
-            gui.Field("Source file", self.file.layout, access="V"),
-            gui.Inline(
-                gui.Button("Add", command=self.add),
-                gui.Button("Remove", command=self.remove),
+        self.win_section = guis.Section("Viridans &quadrats",
+            guis.Field("Name", self.name),
+            guis.Field("Source file", self.file.layout, access="V"),
+            guis.Inline(
+                guis.Button("Add", command=self.add),
+                guis.Button("Remove", command=self.remove),
             ),
             self.list,
         )
@@ -318,16 +318,16 @@ class join(object):
             self.quad_names = quad_names
         
         headings = self.headings()
-        output = self.gui.List(headings)
+        output = guis.List(headings)
         
-        form = self.gui.Form(
+        form = guis.Form(
             output,
-            self.gui.Inline(
-                self.gui.Button("Save as &HTML . . .", command=self.save),
-                self.gui.Button("&Close", command=lambda: self.window.close()),
+            guis.Inline(
+                guis.Button("Save as &HTML . . .", command=self.save),
+                guis.Button("&Close", command=lambda: self.window.close()),
             ),
         )
-        self.window = self.gui.Window(parent, title="Plant list",
+        self.window = guis.Window(self.gui, parent, title="Plant list",
             contents=form)
         #~ self.window.bind("<Return>", self.save)
         
@@ -560,7 +560,8 @@ class Freqs(object):
         )
         
         self.saved_evcs = evcs
-        self.evc_list = gui.List(("EVC", "EVC_DESC"), selected=self.selected)
+        self.evc_list = guis.List(("EVC", "EVC_DESC"),
+            selected=self.selected)
 #        self.evc_list = ScrolledTree(form.master, tree=False, columns=(
 #            Record(heading="EVC", width=(4, ScrolledTree.FIGURE)),
 #            Record(heading="EVC_DESC", width=30, stretch=True),
@@ -569,12 +570,12 @@ class Freqs(object):
 #        vcmd = ValidateCommand(form.master, self.validate_thold)
 #        entry = Entry(form.master, textvariable=self.thold, validate="key",
 #            validatecommand=vcmd)
-        self.thold = gui.Entry(str(thold))
+        self.thold = guis.Entry(str(thold))
         
-        self.win_section = gui.Section("EVC &frequencies",
-            gui.Field("Source file", self.file.layout),
-            gui.Field("Select &EVCs", self.evc_list),
-            gui.Field("Frequency &threshold", self.thold),
+        self.win_section = guis.Section("EVC &frequencies",
+            guis.Field("Source file", self.file.layout),
+            guis.Field("Select &EVCs", self.evc_list),
+            guis.Field("Frequency &threshold", self.thold),
         )
     
     def update(self):
@@ -646,16 +647,16 @@ class FileEntry(object):
         self.title = title
         self.command = command
         
-        self.entry = gui.Entry(default)
+        self.entry = guis.Entry(default)
         #~ Button(field, text="Delete", command=partial(file.set, "")).pack(
             #~ side=tkinter.LEFT)
         if delete:
-            delete = (gui.Button("Delete"),)
+            delete = (guis.Button("Delete"),)
         else:
             delete = ()
-        self.layout = gui.Inline(
+        self.layout = guis.Inline(
             self.entry,
-            gui.Button("Browse", command=self.browse),
+            guis.Button("Browse", command=self.browse),
         *delete)
     
     def set_parent(self, window):
