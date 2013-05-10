@@ -56,17 +56,17 @@ Try "{} help"'''.format(arg, argv[0]))
         print("""\
 {TITLE}
 
-Usage:\treveg.py ca ... [area ...] [freqs ... evc ...] [quad ...] [options]
+Usage:\treveg.py [ca ... [area ...] [freqs ... evc ...] [quad ...]] [options]
 
 Includes only those plants selected by the "area", "evc" and "quad" options.
 Ignores plants with * and + origin, and ferns, orchids and mistletoes.
 
 Options:
 ca <{CA}>
-\tCastlemaine plant list CSV file. Produce combined list based off
-\tthis.
+\tCastlemaine plant list file, CSV or Excel. Produce combined list
+\tbased off this.
 freqs <{FREQS}>
-\tEVC frequency plant list CSV file
+\tEVC frequency plant list file, CSV or Excel
 grid <octal code>
 \tOctal (binary) mask code of 10-minute grid references to highlight.
 \tThe matching grid code(s) are indicated in the list, but this does
@@ -78,11 +78,10 @@ area <alphanumeric sequence>
 \tCastlemaine plant list area codes to include. More than one may be
 \tspecified as a string of codes or multiple options. The order does
 \tnot matter. The matching codes are indicated in the list.
-evc <name or number>
+evc <name>
 \tInclude plants whose relative frequencies in EVC exceed threshold.
-\tUse "freqs" option alone to list EVCs. If the EVC does not exist (or
-\tis spelt wrong), the only indication is the corresponding output
-\tcolumn is not populated.
+\tIf the EVC does not exist (or is spelt wrong), the only indication is
+\tthe corresponding output column is not populated.
 quad <Viridans CSV file>
 \tInclude plants from Viridans quadrat. The "systematic format" is
 \tprobably better than the alphabetical because some types of plants
