@@ -339,7 +339,7 @@ class join(object):
         self.entries = list()
         for entry in self:
             self.entries.append(entry)
-            output.add(entry)
+            output.add(field or "" for field in entry)
         
         #~ buttons = Frame(self.window)
         #~ buttons.grid()
