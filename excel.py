@@ -4,6 +4,7 @@ from xlrd import (XL_CELL_EMPTY, XL_CELL_BLANK)
 from numbers import Number
 from contextlib import closing
 from db import (FREQS_EMPTIES, freq_ints, parse_fields)
+from sys import stderr
 
 def CplExcelReader(file):
     HEADING_FIELDS = {
@@ -88,8 +89,9 @@ def FreqExcelReader(file):
                 yield plant
 
 def excel_sheets(*args, **kw):
-    with open_workbook(*args, on_demand=True, ragged_rows=True, **kw) as (
-    book):
+    book = open_workbook(*args,
+        on_demand=True, ragged_rows=True, logfile=stderr, **kw)
+    with book:
         for i in range(book.nsheets):
             try:
                 yield book.sheet_by_index(i)
