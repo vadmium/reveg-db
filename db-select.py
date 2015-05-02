@@ -1,7 +1,8 @@
 #! /usr/bin/env python3
 
 from tkinter import Tk
-from tkwrap import ScrolledTree
+from tkwrap import Tree
+from tkwrap import scroll
 from db import (CaCsvReader, FreqCsvReader)
 from excel import (CplExcelReader, FreqExcelReader)
 from db import QuadratReader
@@ -12,7 +13,7 @@ from operator import attrgetter
 from db import (plant_key, NameSimplifier)
 from sys import stderr
 from tkinter import Toplevel
-from tkinter.ttk import Entry
+from tkinter.ttk import Entry, Frame
 from fnmatch import fnmatchcase
 from functools import partial
 
@@ -28,9 +29,9 @@ def main(*, ca_csv=(), cpl_excel=(), freqs=(), freqs_csv=(), quad=()):
     
     ui.names = list()
     for (i, (_, item)) in enumerate(sorted(ui.items.items())):
-        ui.list.tree.move(item, "", i)
+        ui.list.move(item, "", i)
         
-        name = ui.list.tree.set(item, 1)
+        name = ui.list.set(item, 1)
         level = ui.names
         leaf = None
         for word in name.translate(NameSimplifier()).split():
@@ -51,9 +52,11 @@ def main(*, ca_csv=(), cpl_excel=(), freqs=(), freqs_csv=(), quad=()):
     ui.entry.bind("<Up>", partial(ui.select_match, "prev"))
     ui.entry.bind("<Down>", partial(ui.select_match, "next"))
     
-    ui.matches = ScrolledTree(win, tree=False, resize=True,
+    frame = Frame(win)
+    ui.matches = Tree(frame, tree=False,
         columns=(dict(heading="Matches", width=30),))
-    ui.matches.pack(fill=tkinter.BOTH, expand=True)
+    scroll(ui.matches, resize=True)
+    frame.pack(fill=tkinter.BOTH, expand=True)
     
     root.mainloop()
 
@@ -61,21 +64,21 @@ class Ui(object):
     def __init__(self, window):
         window.title("Reference list")
         
-        self.list = ScrolledTree(window, tree=False, resize=True, columns=(
+        self.list = Tree(window, tree=False, columns=(
             dict(heading="Origin", width=1),
             dict(heading="Name", width=20, stretch=True),
             dict(heading="Authority", width=6),
             dict(heading="Common name", width=15),
-            dict(heading="Family", width=(3, ScrolledTree.FIGURE)),
+            dict(heading="Family", width=(3, Tree.FIGURE)),
             dict(heading="Family", width=8),
             dict(heading="Family", width=6),
-            dict(heading="Division", width=(1, ScrolledTree.FIGURE)),
+            dict(heading="Division", width=(1, Tree.FIGURE)),
             dict(heading="Division", width=6),
             dict(heading="Note", width=3),
-            dict(heading="SPECNUM", width=(4, ScrolledTree.FIGURE)),
+            dict(heading="SPECNUM", width=(4, Tree.FIGURE)),
         ))
-        self.list.pack(fill=tkinter.BOTH, expand=True)
-        self.list.tree.focus_set()
+        scroll(self.list, resize=True)
+        self.list.focus_set()
         
         self.items = dict()
         self.records = 0
@@ -101,7 +104,7 @@ class Ui(object):
             item = self.list.add()
             self.items[key] = item
         
-        current = self.list.tree.item(item, option="values")
+        current = self.list.item(item, option="values")
         current = tuple_record(current, fields, """origin""")
         if getattr(current, "origin", "?") == "?":
             current.origin = None
@@ -115,7 +118,7 @@ class Ui(object):
                     else:
                         value = ""
                 setattr(current, field, value)
-        self.list.tree.item(item,
+        self.list.item(item,
             values=tuple(getattr(current, field) for field in fields))
         
         self.records += 1
@@ -128,7 +131,7 @@ class Ui(object):
     
     def entry_changed(self, value):
         patterns = value.translate(SearchMap()).split()
-        self.matches.tree.delete(*self.matches.tree.get_children())
+        self.matches.delete(*self.matches.get_children())
         if patterns:
             for match in name_matches(self.names, patterns):
                 s = str()
@@ -164,21 +167,21 @@ class Ui(object):
         return True
     
     def select_match(self, dir, event):
-        focus = self.matches.tree.focus()
-        if (focus,) == self.matches.tree.selection():
-            new = getattr(self.matches.tree, dir)(focus)
+        focus = self.matches.focus()
+        if (focus,) == self.matches.selection():
+            new = getattr(self.matches, dir)(focus)
             if new:
                 focus = new
         if not focus:
             return
         
-        self.matches.tree.see(focus)
-        self.matches.tree.focus(focus)
-        self.matches.tree.selection_set((focus,))
+        self.matches.see(focus)
+        self.matches.focus(focus)
+        self.matches.selection_set((focus,))
         
         self.entry.configure(validate="none")
         self.entry.delete(0, tkinter.END)
-        self.entry.insert(0, self.matches.tree.set(focus, 0))
+        self.entry.insert(0, self.matches.set(focus, 0))
         self.entry.select_range(0, tkinter.END)
         self.entry.configure(validate="key")
     
@@ -233,5 +236,5 @@ def ValidateCommand(tk, func):
     return (tk.register(func), "%P")
 
 if __name__ == "__main__":
-    from funcparams import command
-    command()
+    from clifunc import run
+    run(main)
