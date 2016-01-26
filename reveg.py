@@ -8,6 +8,7 @@ from contextlib import closing
 import guis
 from functools import total_ordering
 from db import plant_key
+from contextlib import closing
 
 TITLE = "Reveg DB version 0.3.0"
 
@@ -89,17 +90,17 @@ help\tDisplay this help""".format(
         return
     
     gui = guis.probe()
-    
-    if ca_file is None and freq_file is None and not quads:
-        Ui(gui, grid=grid, area=area, evcs=evcs, freq_thold=freq_thold)
-    else:
-        join(gui,
-            ca_file=ca_file, grid=grid, area=area,
-            freq_file=freq_file, evcs=evcs, freq_thold=freq_thold,
-            quads=quads,
-        )
-    
-    gui.msg_loop()
+    with closing(gui.loop):
+        if ca_file is None and freq_file is None and not quads:
+            Ui(gui, grid=grid, area=area, evcs=evcs, freq_thold=freq_thold)
+        else:
+            join(gui,
+                ca_file=ca_file, grid=grid, area=area,
+                freq_file=freq_file, evcs=evcs, freq_thold=freq_thold,
+                quads=quads,
+            )
+        
+        gui.loop.run_forever()
 
 class Ui(guis.Window):
     def __init__(self, gui, grid, area, evcs, freq_thold):
