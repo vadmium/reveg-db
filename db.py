@@ -20,9 +20,9 @@ def CaCsvReader(file):
         for plant in csv.reader(file):
             if plant[0].startswith("\x1A"):
                 break
-            yield tuple_record(plant, """
-                name, ex, common, family, fam_com, group, area, grid, note,
-            """, empty="""ex, area, note""")
+            yield tuple_record(plant, (
+                "name", "ex", "common", "family", "fam_com", "group", "area", "grid", "note",
+            ), empty=("ex", "area", "note"))
 
 def FreqCsvReader(file):
     with open(file, newline="") as file:
@@ -31,10 +31,10 @@ def FreqCsvReader(file):
             freq_ints(plant)
             yield plant
 
-FREQS_EMPTIES = """ORIGIN, AROTS, VROTS"""
+FREQS_EMPTIES = ("ORIGIN", "AROTS", "VROTS")
 
 def freq_ints(record):
-    for field in parse_fields("""EVC, Frequency, SPECNUM"""):
+    for field in ("EVC", "Frequency", "SPECNUM"):
         record[field] = int(record[field])
     record["BioregionNo"] = float(record["BioregionNo"])
 
@@ -54,12 +54,11 @@ def QuadratReader(file):
                 (extra.family, _, *_) = row
                 continue
             
-            empty = """arots, vrots, origin"""
+            empty = ("arots", "vrots", "origin")
             record = tuple_record(row,
-                """arots, vrots, origin, name, common""", empty=empty)
+                ("arots", "vrots", "origin", "name", "common"), empty=empty)
             record.__dict__.update(vars(extra))
             if not vars(extra):
-                empty = parse_fields(empty)
                 convert_none(record.__dict__, empty)
                 
                 # Convert a single space to empty string
@@ -71,23 +70,20 @@ def QuadratReader(file):
 
 def tuple_record(values, fields, empty):
     record = SimpleNamespace()
-    record.__dict__.update(zip(parse_fields(fields), values))
+    record.__dict__.update(zip(fields, values))
     convert_none_skip(record.__dict__, empty)
     return record
 
 def convert_none_skip(record, skip):
     # Python 3.2.3 seems to have trouble with dict_keys() - tuple(). Bug?
     # Looks like it treats each tuple member as a separate set to subtract.
-    fields = record.keys() - iter(parse_fields(skip))
+    fields = record.keys() - iter(skip)
     convert_none(record, fields)
 
 def convert_none(record, fields):
     for field in fields:
         if not record[field]:
             record[field] = None
-
-def parse_fields(str):
-    return str.replace(",", " ").split()
 
 def plant_key(name):
     words = name.translate(NameSimplifier()).split()

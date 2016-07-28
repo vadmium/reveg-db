@@ -8,7 +8,7 @@ from excel import (CplExcelReader, FreqExcelReader)
 from db import QuadratReader
 from contextlib import closing
 import tkinter
-from db import (tuple_record, parse_fields)
+from db import tuple_record
 from operator import attrgetter
 from db import (plant_key, NameSimplifier)
 from sys import stderr
@@ -93,10 +93,10 @@ class Ui(object):
             print(file=stderr)
     
     def add_plant(self, plant):
-        fields = """
-            origin, name, auth, common, famnum, family, fam_com,
-            divnum, group, note, specnum
-        """
+        fields = (
+            "origin", "name", "auth", "common", "famnum", "family", "fam_com",
+            "divnum", "group", "note", "specnum"
+        )
         key = plant_key(plant["name"])
         try:
             item = self.items[key]
@@ -105,10 +105,9 @@ class Ui(object):
             self.items[key] = item
         
         current = self.list.item(item, option="values")
-        current = tuple_record(current, fields, """origin""")
+        current = tuple_record(current, fields, ("origin",))
         if getattr(current, "origin", "?") == "?":
             current.origin = None
-        fields = parse_fields(fields)
         for field in fields:
             if getattr(current, field, None) is None:
                 value = plant.get(field)

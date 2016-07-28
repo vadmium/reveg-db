@@ -3,7 +3,7 @@ from xlrd import open_workbook
 from xlrd import (XL_CELL_EMPTY, XL_CELL_BLANK)
 from numbers import Number
 from contextlib import closing
-from db import (FREQS_EMPTIES, freq_ints, parse_fields)
+from db import FREQS_EMPTIES, freq_ints
 from sys import stderr
 
 def CplExcelReader(file):
@@ -50,7 +50,7 @@ def CplExcelReader(file):
                     expect_headings = False
                     continue
                 
-                fam_fields = parse_fields("""name, common""")
+                fam_fields = ("name", "common")
                 for (col, type) in enumerate(types):
                     if col in (fields[field] for field in fam_fields):
                         continue
@@ -73,7 +73,7 @@ def CplExcelReader(file):
                         value = value.strip()
                     setattr(plant, name, value)
                 convert_empty(plant.__dict__,
-                    """vrots, weed, ex, area, note""")
+                    ("vrots", "weed", "ex", "area", "note"))
                 yield plant
 
 def FreqExcelReader(file):
@@ -110,6 +110,6 @@ def excel_value(sheet, row, col):
 EXCEL_BLANKS = (XL_CELL_EMPTY, XL_CELL_BLANK)
 
 def convert_empty(record, fields):
-    for name in parse_fields(fields):
+    for name in fields:
         if record[name] is None:
             record[name] = ""
