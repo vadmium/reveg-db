@@ -3,8 +3,12 @@
 from excel import FreqExcelReader
 from contextlib import closing
 from sys import stderr
+from time import monotonic
 
 def main(freqs, selection=None):
+    deadline = monotonic() + 1
+    midline = False
+    
     selset = set()
     if selection:
         with open(selection, "rt") as reader:
@@ -14,8 +18,18 @@ def main(freqs, selection=None):
     evcs = list()  # [(evc, desc, {name: freq for each plant}) for each EVC]
     max_freqs = list()  # [max(freq) for each EVC]
     with closing(FreqExcelReader(freqs)) as freqs:
+        total = format(len(freqs))
         last_evc = None
-        for plant in freqs:
+        for [i, plant] in enumerate(freqs):
+            now = monotonic()
+            if now >= deadline:
+                if midline:
+                    print(end="\r", file=stderr)
+                msg = "Record {:{}}/{}".format(i + 1, len(total), total)
+                print(end=msg, file=stderr)
+                midline = True
+                deadline = now + 0.1
+            
             if plant["EVC"] != last_evc:
                 last_evc = plant["EVC"]
                 last_desc = plant["EVC_DESC"]
@@ -39,6 +53,9 @@ def main(freqs, selection=None):
                 msg = "Duplicate record for {NAME} in {EVC}"
                 print(msg.format_map(plant), file=stderr)
             plant_freqs[name] = plant_freqs.get(name, 0) + plant["Frequency"]
+    
+    if midline:
+        print(end="\x1B[1K\r", file=stderr)
     
     heading = "{:>4.4} {:67.67}{:>5.5}"
     print(heading.format("EVC", "EVC_DESC", "max(Frequency)"))
