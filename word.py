@@ -8,6 +8,7 @@ from io import BufferedIOBase, UnsupportedOperation
 from shorthand import bitmask
 from io import TextIOWrapper, BytesIO
 from shutil import copyfileobj
+from collections.abc import Sequence
 
 class Subfile(BufferedIOBase):
     def readable(self):
@@ -91,36 +92,41 @@ sprmPHugePapx = 0x0646
 sprmTDefTable = 0x1608
 SPRA_SIZES = {0: 1, 1: 1, 2: 2, 3: 4, 4: 2, 5: 2, 7: 3}
 
-def iter_pieces(doc, table, fcClx, lcbClx):
-    table.seek(fcClx)
-    subfile = Subfile(table, lcbClx)
-    while True:
-        clxt = subfile.read(1)
-        if clxt != b"\x01":
-            break
-        [cbGrpprl] = signed2.unpack(subfile.read(2))
-        assert cbGrpprl >= 0
-        subfile.seek(cbGrpprl, SEEK_CUR)
-    assert clxt == b"\x02"
-    [lcb] = unsigned4.unpack(subfile.read(4))
-    assert lcb >= 4
-    [n, remainder] = divmod(lcb - 4, 4 + Pcd.size)
-    assert not remainder
-    [cp] = unsigned4.unpack(subfile.read(4))
-    aCP1 = subfile.tell()
-    aPcd = aCP1 + n * 4
-    for i in range(n):
-        subfile.seek(aPcd + i * Pcd.size)
-        [_, fc, prm] = Pcd.unpack(subfile.read(Pcd.size))
-        assert prm == 0x0000
-        subfile.seek(aCP1 + i * 4)
-        [next_cp] = unsigned4.unpack(subfile.read(4))
+class Pieces(Sequence):
+    def __init__(self, doc, table, fcClx, lcbClx):
+        self._doc = doc
+        table.seek(fcClx)
+        self._subfile = Subfile(table, lcbClx)
+        while True:
+            clxt = self._subfile.read(1)
+            if clxt != b"\x01":
+                break
+            [cbGrpprl] = signed2.unpack(self._subfile.read(2))
+            assert cbGrpprl >= 0
+            self._subfile.seek(cbGrpprl, SEEK_CUR)
+        assert clxt == b"\x02"
+        [lcb] = unsigned4.unpack(self._subfile.read(4))
+        assert lcb >= 4
+        [self._n, remainder] = divmod(lcb - 4, 4 + Pcd.size)
+        assert not remainder
+        self._aCP = self._subfile.tell()
+        self._aPcd = self._aCP + (self._n + 1) * 4
+    
+    def __len__(self):
+        return self._n
+    
+    def __getitem__(self, i):
+        i = range(self._n)[i]
+        self._subfile.seek(self._aCP + i * 4)
+        [[cp], [next_cp]] = unsigned4.iter_unpack(self._subfile.read(4 * 2))
         assert next_cp > cp
+        self._subfile.seek(self._aPcd + i * Pcd.size)
+        [_, fc, prm] = Pcd.unpack(self._subfile.read(Pcd.size))
+        assert prm == 0x0000
         size = next_cp - cp
         fCompressed = fc >> COMPRESSED_BIT & 1
         fc &= FC_MASK
-        yield Piece(doc, size, fCompressed, fc)
-        cp = next_cp
+        return Piece(self._doc, size, fCompressed, fc)
 
 class Piece:
     def __init__(self, doc, size, fCompressed, fc):
@@ -291,7 +297,7 @@ def main(file):
         table = ole.openstream("{}Table".format(fWhichTblStm))
         
         from sys import stdout
-        pieces = iter_pieces(doc, table, fcClx, lcbClx)
+        pieces = Pieces(doc, table, fcClx, lcbClx)
         prev_in_table = False
         for piece in pieces:  # For each piece starting a paragraph
             paras = iter_paras_from(doc, ole, table,
