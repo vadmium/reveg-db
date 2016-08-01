@@ -2,18 +2,18 @@
 
 import sys
 from unittest import (TestCase, TestSuite)
-from misc import deco_factory
+from functions import decorator
 import reveg
 from tempfile import TemporaryDirectory
 from os import path
 import csv
 
-@deco_factory
+@decorator
 def suite_add(suite, Test):
     suite.addTest(Test())
     return Test
 
-@deco_factory
+@decorator
 def testfunc(func, base=TestCase):
     return type(func.__name__, (base,), dict(runTest=func))
 
