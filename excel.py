@@ -5,6 +5,7 @@ from numbers import Number
 from contextlib import closing
 from db import FREQS_EMPTIES, freq_ints
 from sys import stderr
+from collections import Sequence
 
 def CplExcelReader(file):
     HEADING_FIELDS = {
@@ -76,17 +77,32 @@ def CplExcelReader(file):
                     ("vrots", "weed", "ex", "area", "note"))
                 yield plant
 
-def FreqExcelReader(file):
-    with closing(excel_sheets(file)) as file:
-        for sheet in file:
-            fields = sheet.row_values(0)
-            for row in range(1, sheet.nrows):
-                plant = dict()
-                for (col, field) in enumerate(fields):
-                    plant[fields[col]] = excel_value(sheet, row, col)
-                convert_empty(plant, FREQS_EMPTIES)
-                freq_ints(plant)
-                yield plant
+class FreqExcelReader(Sequence):
+    def __init__(self, file):
+        self._book = open_workbook(file,
+            on_demand=True, ragged_rows=True, logfile=stderr)
+        with self._book:
+            self._sheet = self._book.sheet_by_index(0)
+        try:
+            self._fields = self._sheet.row_values(0)
+        except:
+            self.close()
+            raise
+    
+    def close(self):
+        self._book.unload_sheet(0)
+    
+    def __len__(self):
+        return self._sheet.nrows - 1
+    
+    def __getitem__(self, i):
+        row = range(1, self._sheet.nrows)[i]
+        plant = dict()
+        for [col, field] in enumerate(self._fields):
+            plant[field] = excel_value(self._sheet, row, col)
+        convert_empty(plant, FREQS_EMPTIES)
+        freq_ints(plant)
+        return plant
 
 def excel_sheets(*args, **kw):
     book = open_workbook(*args,
