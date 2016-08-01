@@ -4,11 +4,15 @@ from excel import FreqExcelReader
 from contextlib import closing
 from sys import stderr
 
-def main(freqs):
+def main(freqs, selection=None):
+    selset = set()
+    if selection:
+        with open(selection, "rt") as reader:
+            for plant in reader:
+                selset.add(plant.strip())
+    
     evcs = list()  # [(evc, desc, {name: freq for each plant}) for each EVC]
     max_freqs = list()  # [max(freq) for each EVC]
-    #~ selection = {"Acacia dealbata", "oops"}
-    selection = set()
     with closing(FreqExcelReader(freqs)) as freqs:
         last_evc = None
         for plant in freqs:
@@ -26,9 +30,11 @@ def main(freqs):
                     print(msg, file=stderr)
                     last_desc = plant["EVC_DESC"]
             name = plant["NAME"]
-            #~ if name not in selection:
-                #~ continue
-            selection.add(name)
+            if selection:
+                if name not in selset:
+                    continue
+            else:
+                selset.add(name)
             if name in plant_freqs:
                 msg = "Duplicate record for {NAME} in {EVC}"
                 print(msg.format_map(plant), file=stderr)
@@ -42,7 +48,7 @@ def main(freqs):
     for [evc, _, _] in evcs:
         print(end=format(evc, "6"))
     print()
-    for plant in sorted(selection):
+    for plant in sorted(selset):
         print(end=plant[:32].ljust(32))
         found = False
         for [[_, _, freqs], max_freq] in zip(evcs, max_freqs):
