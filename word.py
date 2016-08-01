@@ -299,42 +299,52 @@ def main(file):
         from sys import stdout
         pieces = Pieces(doc, table, fcClx, lcbClx)
         prev_in_table = False
-        for piece in pieces:  # For each piece starting a paragraph
+        i = 0
+        while i < len(pieces):  # For each piece starting a paragraph
+            piece = pieces[i]
             paras = iter_paras_from(doc, ole, table,
                 fcPlcfBtePapx, lcbPlcfBtePapx, piece.byte_offset)
             while True:  # For each paragraph in the current piece
-                para_size = 0
-                while True:  # For each piece contributing to the paragraph
+                # Scan ahead to find how many pieces span this paragraph
+                j = i
+                scan_piece = piece
+                while True:
                     [end, in_table, is_ttp] = next(paras)
-                    end -= piece.byte_offset
-                    if end <= piece.bytes_remaining:
+                    end -= scan_piece.byte_offset
+                    if end <= scan_piece.bytes_remaining:
                         break
                     while True:  # For each piece without paragraph info
-                        para_size += piece.bytes_remaining // piece.code_size
-                        copyfileobj(piece.get_reader(), stdout)
-                        piece = next(piece)
+                        j += 1
+                        piece = pieces[j]
                         paras = iter_paras_from(doc, table,
-                            fcPlcfBtePapx, lcbPlcfBtePapx, piece.byte_offset)
+                            fcPlcfBtePapx, lcbPlcfBtePapx,
+                            scan_piece.byte_offset)
                         if paras is not None:
                             break
+                
+                # Found a paragraph spanning pieces i-j
+                if not prev_in_table and in_table:
+                    print(end="╔")
+                if prev_in_table and not in_table:
+                    print(end="╚╝")
                 if is_ttp:
-                    para_size += end // piece.code_size
-                    assert para_size == 1
+                    assert i == j and end == piece.code_size
                     assert piece.get_reader(end).read() == "\x07"
-                    mark = "╜"
+                    print("╜")
                 else:
+                    while i < j:
+                        copyfileobj(piece.get_reader(), stdout)
+                        i += 1
+                        piece = pieces[i]
                     assert end
                     copyfileobj(piece.get_reader(end - piece.code_size), stdout)
                     mark = piece.get_reader(piece.code_size).read()
-                    mark = {"\r": "¶", "\x07": "¤", "\f": "§"}[mark]
-                if not prev_in_table and in_table:
-                    print(end="╤")
-                elif prev_in_table and not in_table:
-                    print(end="╚")
-                print(mark)
+                    print({"\r": "¶", "\x07": "¤", "\f": "§"}[mark])
                 prev_in_table = in_table
+                
                 if not piece.bytes_remaining:
                     break
+            i += 1
         assert not prev_in_table
         
         for [exctype, msg] in ole.parsing_issues:
