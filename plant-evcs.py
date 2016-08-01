@@ -11,8 +11,22 @@ def main(freqs, selection=None):
     
     selset = set()
     if selection:
+        prev = None
         with open(selection, "rt") as reader:
             for plant in reader:
+                plant = plant.rstrip("\r\n")
+                genus = plant.split(maxsplit=1)[0]
+                if genus.endswith("."):
+                    if prev is None:
+                        msg = "No previous genus to {!r}".format(plant)
+                        print(msg, file=stderr)
+                    elif prev.startswith(genus[:-1]):
+                        plant = prev + plant[len(genus):]
+                    else:
+                        msg = "Genus {!r} does not match previous {!r}"
+                        print(msg.format(genus, prev), file=stderr)
+                else:
+                    prev = genus
                 selset.add(plant.strip())
     
     evcs = list()  # [(evc, desc, {name: freq for each plant}) for each EVC]
