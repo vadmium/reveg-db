@@ -1,7 +1,7 @@
 #! /usr/bin/env python3
 
 import sys
-from unittest import (TestCase, TestSuite)
+import unittest
 from functions import decorator
 import reveg
 from tempfile import TemporaryDirectory
@@ -9,19 +9,9 @@ from os import path
 import csv
 
 @decorator
-def suite_add(suite, Test):
-    suite.addTest(Test())
-    return Test
-
-@decorator
-def testfunc(func, base=TestCase):
+def testfunc(func, base=unittest.TestCase):
     return type(func.__name__, (base,), dict(runTest=func))
 
-def load_tests(loader, default, pattern):
-    return suite
-suite = TestSuite()
-
-@suite_add(suite)
 @testfunc()
 def punct(self):
     """Merge data with varying punctuation and abbreviations"""
@@ -35,7 +25,6 @@ def punct(self):
             "1.00"],
     ))
 
-@suite_add(suite)
 @testfunc()
 def species(self):
     """Include all entries for matching species"""
@@ -57,7 +46,6 @@ def species(self):
         ["Danthonia s.l. spp.", "", "", "", "", "0.20"],
     ))
 
-@suite_add(suite)
 @testfunc()
 def order(self):
     """Tricky plant name ordering"""
@@ -126,5 +114,4 @@ class TestGui(object):
         return self.id
 
 if __name__ == "__main__":
-    import unittest
     unittest.main()
