@@ -1,14 +1,15 @@
 #! /usr/bin/env python3
-# coding=UTF-8
 
 from OleFileIO_PL import OleFileIO
 from struct import Struct
 from io import SEEK_SET, SEEK_CUR, SEEK_END
 from io import BufferedIOBase, UnsupportedOperation
 from shorthand import bitmask
-from io import TextIOWrapper, BytesIO
+from io import TextIOWrapper, BytesIO, StringIO
 from shutil import copyfileobj
 from collections.abc import Sequence
+from sys import stdout, stderr
+import csv
 
 class Subfile(BufferedIOBase):
     def readable(self):
@@ -147,6 +148,10 @@ class Piece:
         self.byte_offset += size
         reader = self._decoder.reader_cls(self._doc, size)
         return TextIOWrapper(reader, self._decoder.encoding, newline="\r")
+    
+    def skip(self, size):
+        self.bytes_remaining -= size
+        self.byte_offset += size
 
 class Cp1252Decoder:
     code_size = 1
@@ -296,59 +301,75 @@ def main(file):
         [fcPlcfBtePapx, lcbPlcfBtePapx, fcClx, lcbClx] = fibRgFcLcb97
         table = ole.openstream("{}Table".format(fWhichTblStm))
         
-        from sys import stdout
-        pieces = Pieces(doc, table, fcClx, lcbClx)
-        prev_in_table = False
-        i = 0
-        while i < len(pieces):  # For each piece starting a paragraph
-            piece = pieces[i]
-            paras = iter_paras_from(doc, ole, table,
-                fcPlcfBtePapx, lcbPlcfBtePapx, piece.byte_offset)
-            while True:  # For each paragraph in the current piece
-                # Scan ahead to find how many pieces span this paragraph
-                j = i
-                scan_piece = piece
-                while True:
-                    [end, in_table, is_ttp] = next(paras)
-                    end -= scan_piece.byte_offset
-                    if end <= scan_piece.bytes_remaining:
-                        break
-                    while True:  # For each piece without paragraph info
-                        j += 1
-                        piece = pieces[j]
-                        paras = iter_paras_from(doc, table,
-                            fcPlcfBtePapx, lcbPlcfBtePapx,
-                            scan_piece.byte_offset)
-                        if paras is not None:
+        out = TextIOWrapper(stdout.buffer, stdout.encoding, stdout.errors,
+            newline="", line_buffering=stdout.line_buffering)
+        try:
+            writer = csv.writer(out)
+            row = list()
+            cell = None
+            
+            pieces = Pieces(doc, table, fcClx, lcbClx)
+            i = 0
+            while i < len(pieces):  # For each piece starting a paragraph
+                piece = pieces[i]
+                paras = iter_paras_from(doc, ole, table,
+                    fcPlcfBtePapx, lcbPlcfBtePapx, piece.byte_offset)
+                while True:  # For each paragraph in the current piece
+                    # Scan ahead to find how many pieces span this paragraph
+                    j = i
+                    scan_piece = piece
+                    while True:
+                        [end, in_table, is_ttp] = next(paras)
+                        end -= scan_piece.byte_offset
+                        if end <= scan_piece.bytes_remaining:
                             break
-                
-                # Found a paragraph spanning pieces i-j
-                if not prev_in_table and in_table:
-                    print(end="╔")
-                if prev_in_table and not in_table:
-                    print(end="╚╝")
-                if is_ttp:
-                    assert i == j and end == piece.code_size
-                    assert piece.get_reader(end).read() == "\x07"
-                    print("╜")
-                else:
-                    while i < j:
-                        copyfileobj(piece.get_reader(), stdout)
-                        i += 1
-                        piece = pieces[i]
-                    assert end
-                    copyfileobj(piece.get_reader(end - piece.code_size), stdout)
-                    mark = piece.get_reader(piece.code_size).read()
-                    print({"\r": "¶", "\x07": "¤", "\f": "§"}[mark])
-                prev_in_table = in_table
-                
-                if not piece.bytes_remaining:
-                    break
-            i += 1
-        assert not prev_in_table
+                        while True:  # For each piece without paragraph info
+                            j += 1
+                            piece = pieces[j]
+                            paras = iter_paras_from(doc, table,
+                                fcPlcfBtePapx, lcbPlcfBtePapx,
+                                scan_piece.byte_offset)
+                            if paras is not None:
+                                break
+                    
+                    # Found a paragraph spanning pieces i-j
+                    if is_ttp:
+                        writer.writerow(row)
+                        row.clear()
+                    if in_table and not is_ttp:
+                        if not cell:
+                            cell = StringIO()
+                        while i < j:
+                            copyfileobj(piece.get_reader(), cell)
+                            i += 1
+                            piece = pieces[i]
+                        assert end
+                        reader = piece.get_reader(end - piece.code_size)
+                        copyfileobj(reader, cell)
+                        mark = piece.get_reader(piece.code_size).read()
+                        if mark == "\x07":
+                            row.append(cell.getvalue())
+                            cell = None
+                        else:
+                            cell.write(mark)
+                    else:
+                        assert not row
+                        assert not cell
+                        if i < j:
+                            i = j
+                            piece = pieces[i]
+                        piece.skip(end)
+                    
+                    if not piece.bytes_remaining:
+                        break
+                i += 1
+            assert not row
+            assert not cell
+        finally:
+            out.detach()
         
         for [exctype, msg] in ole.parsing_issues:
-            print("{}: {}".format(exctype.__name__, msg))
+            print("{}: {}".format(exctype.__name__, msg), file=stderr)
 
 if __name__ == "__main__":
     from clifunc import run
