@@ -15,30 +15,35 @@ class Subfile(BufferedIOBase):
     
     def __init__(self, parent, size):
         self._parent = parent
-        self._size = size
+        self._remaining = size
+        self._start = self._parent.tell()
+        self._offset = 0
     
     def read(self, size=-1):
-        if size < 0 or size is None or size > self._size:
-            size = self._size
-        self._size -= size
+        if size not in range(self._remaining) or size is None:
+            size = self._remaining
         result = self._parent.read(size)
+        self._remaining -= len(result)
+        self._offset += len(result)
         if len(result) < size:
             raise EOFError("Truncated read")
         return result
     read1 = read
     
+    def tell(self):
+        return self._offset
+    
     def seek(self, offset, base=SEEK_SET):
         if base == SEEK_END:
-            raise UnsupportedOperation("SEEK_END")
+            offset += self._remaining
         if base == SEEK_SET:
-            offset -= self.tell()
-        if offset > self._size:
-            raise EOFError("Seek past end")
-        self._size -= offset
-        return self._parent.seek(offset, SEEK_CUR)
-    
-    def tell(self):
-        return self._parent.tell()
+            offset -= self._offset
+        if not -self._offset <= offset <= self._remaining:
+            raise EOFError("Seek out of range")
+        self._parent.seek(self._start + self._offset + offset)
+        self._remaining -= offset
+        self._offset += offset
+        return self._offset
 
 unsigned2 = Struct("<H")
 signed2 = Struct("<h")
