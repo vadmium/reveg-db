@@ -40,7 +40,7 @@ def parse_synonyms(filename, tree):
         for line in reader:
             line = line.rstrip(" \r\n")
             line = line.split(" = ")
-            for plant in line:
+            for [i, plant] in enumerate(line):
                 key = list()
                 for word in plant.split(" "):
                     abbr = word
@@ -72,6 +72,9 @@ def parse_synonyms(filename, tree):
                 [children, remainder] = lookup_tree(tree, key)
                 if remainder:
                     if children or children is tree:
+                        if not i:
+                            msg = "First synonym {} not already listed"
+                            print(msg.format(plant), file=stderr)
                         add_tree(children, remainder)
                     else:
                         msg = "Supertaxon of {} already listed".format(plant)
@@ -82,7 +85,7 @@ def parse_synonyms(filename, tree):
                             [subname, _] = children.popitem()
                             msg = "{} subtaxon {} already listed"
                             print(msg.format(plant, subname), file=stderr)
-                    else:
+                    elif i:
                         msg = "{} equivalent already listed".format(plant)
                         print(msg, file=stderr)
 
