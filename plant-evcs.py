@@ -31,7 +31,62 @@ def walk_tree(root, *, _path=list()):
         finally:
             _path.pop()
 
-def main(freqs, selection=None):
+def parse_synonyms(filename, tree):
+    if not filename:
+        return
+    
+    prev = dict()
+    with open(filename, "rt") as reader:
+        for line in reader:
+            line = line.rstrip(" \r\n")
+            line = line.split(" = ")
+            for plant in line:
+                key = list()
+                for word in plant.split(" "):
+                    abbr = word
+                    if abbr.endswith("."):
+                        abbr = abbr[:-1]
+                    if abbr in db.abbr:
+                        continue
+                    
+                    if word.endswith("."):
+                        genus = None
+                        if not key and len(word) == 2:
+                            genus = prev.get(word[0], None)
+                        if genus is None:
+                            msg = "No match for abbreviated {!r}"
+                            print(msg.format(plant), file=stderr)
+                        else:
+                            word = genus
+                    elif not key:
+                        prev[word[0]] = word
+                    key.append(word)
+                
+                genus = key[0]
+                if genus.istitle():
+                    key[0] = genus.lower()
+                else:
+                    msg = "Genus {!r} is not in title case"
+                    print(msg.format(genus), file=stderr)
+                
+                [children, remainder] = lookup_tree(tree, key)
+                if remainder:
+                    if children or children is tree:
+                        add_tree(children, remainder)
+                    else:
+                        msg = "Supertaxon of {} already listed".format(plant)
+                        print(msg, file=stderr)
+                else:
+                    if children:
+                        while children:
+                            [subname, _] = children.popitem()
+                            msg = "{} subtaxon {} already listed"
+                            print(msg.format(plant, subname), file=stderr)
+                    else:
+                        msg = "{} equivalent already listed".format(plant)
+                        print(msg, file=stderr)
+
+def main(freqs, selection=None, *, synonyms=None):
     deadline = monotonic() + 1
     midline = False
     
@@ -86,6 +141,7 @@ def main(freqs, selection=None):
                         msg = "{} equivalent already listed".format(plant)
                         print(msg, file=stderr)
     
+    parse_synonyms(synonyms, tree)
     selected = set()
     evcs = list()  # [(evc, desc, {name: freq for each plant}) for each EVC]
     max_freqs = list()  # [max(freq) for each EVC]
