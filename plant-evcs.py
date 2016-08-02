@@ -2,33 +2,91 @@
 
 from excel import FreqExcelReader
 from contextlib import closing
+import db
 from sys import stderr
 from time import monotonic
+
+def lookup_tree(root, key):
+    for [i, subkey] in enumerate(key):
+        try:
+            root = root[subkey]
+        except LookupError:
+            return (root, key[i:])
+    return (root, ())
+
+def add_tree(root, key):
+    for subkey in key:
+        children = dict()
+        root[subkey] = children
+        root = children
+
+def walk_tree(root, *, _path=list()):
+    for [key, children] in sorted(root.items()):
+        _path.append(key)
+        try:
+            if children:
+                yield from walk_tree(children, _path=_path)
+            else:
+                yield _path
+        finally:
+            _path.pop()
 
 def main(freqs, selection=None):
     deadline = monotonic() + 1
     midline = False
     
-    selset = set()
+    tree = dict()  # {subname: ..., ...}
     if selection:
         prev = None
         with open(selection, "rt") as reader:
             for plant in reader:
-                plant = plant.rstrip("\r\n")
-                genus = plant.split(maxsplit=1)[0]
-                if genus.endswith("."):
-                    if prev is None:
-                        msg = "No previous genus to {!r}".format(plant)
-                        print(msg, file=stderr)
-                    elif prev.startswith(genus[:-1]):
-                        plant = prev + plant[len(genus):]
+                plant = plant.rstrip(" \r\n")
+                key = list()
+                for word in plant.split(" "):
+                    abbr = word
+                    if abbr.endswith("."):
+                        abbr = abbr[:-1]
+                    if abbr in db.abbr:
+                        continue
+                    
+                    if not key:
+                        if word.istitle():
+                            word = word.lower()
+                        else:
+                            msg = "Genus {!r} is not in title case"
+                            print(msg.format(word), file=stderr)
+                    if word.endswith("."):
+                        if prev is None:
+                            msg = "No previous entry to expand {!r} from"
+                            print(msg.format(plant), file=stderr)
+                        elif len(prev) > len(key) \
+                                and prev[:len(key)] == key \
+                                and prev[len(key)].startswith(word[:-1]):
+                            word = prev[len(key)]
+                        else:
+                            print("Abbreviated {!r} does not match " \
+                                "previous entry".format(plant), file=stderr)
+                    key.append(word)
+                prev = key
+                
+                [children, remainder] = lookup_tree(tree, key)
+                if remainder:
+                    if children or children is tree:
+                        add_tree(children, remainder)
                     else:
-                        msg = "Genus {!r} does not match previous {!r}"
-                        print(msg.format(genus, prev), file=stderr)
+                        msg = "Supertaxon of {} already listed".format(plant)
+                        print(msg, file=stderr)
                 else:
-                    prev = genus
-                selset.add(plant.strip())
+                    if children:
+                        while children:
+                            [subname, _] = children.popitem()
+                            msg = "{} subtaxon {} already listed"
+                            print(msg.format(plant, subname), file=stderr)
+                    else:
+                        msg = "{} equivalent already listed".format(plant)
+                        print(msg, file=stderr)
     
+    selected = set()
     evcs = list()  # [(evc, desc, {name: freq for each plant}) for each EVC]
     max_freqs = list()  # [max(freq) for each EVC]
     with closing(FreqExcelReader(freqs)) as freqs:
@@ -59,10 +117,13 @@ def main(freqs, selection=None):
                     last_desc = plant["EVC_DESC"]
             name = plant["NAME"]
             if selection:
-                if name not in selset:
+                key = list(n[0] for n in db.plant_key(name))
+                if not key[-1]:
+                    key.pop()
+                [children, remainder] = lookup_tree(tree, key)
+                if remainder and children:
                     continue
-            else:
-                selset.add(name)
+            selected.add(name)
             if name in plant_freqs:
                 msg = "Duplicate record for {NAME} in {EVC}"
                 print(msg.format_map(plant), file=stderr)
@@ -79,9 +140,8 @@ def main(freqs, selection=None):
     for [evc, _, _] in evcs:
         print(end=format(evc, "6"))
     print()
-    for plant in sorted(selset):
+    for plant in sorted(selected):
         print(end=plant[:32].ljust(32))
-        found = False
         for [[_, _, freqs], max_freq] in zip(evcs, max_freqs):
             freq = freqs.get(plant)
             if freq is None:
@@ -90,8 +150,28 @@ def main(freqs, selection=None):
             found = True
             print(end=format(freq / max_freq, "6.3f"))
         print()
-        if not found:
-            print("No record of {}".format(plant), file=stderr)
+        
+        if selection:
+            # Prune any non-branching paths leading to this entry
+            key = list(n[0] for n in db.plant_key(plant))
+            if not key[-1]:
+                key.pop()
+            node = tree
+            for subkey in key:
+                if len(node) > 1:
+                    branch_node = node
+                    branch_name = subkey
+                try:
+                    node = node[subkey]
+                except LookupError:
+                    break
+            if not node:
+                del branch_node[branch_name]
+    
+    if selection:
+        for path in walk_tree(tree):
+            msg = "No records matching {}"
+            print(msg.format(" ".join(path).capitalize()), file=stderr)
 
 if __name__ == "__main__":
     from clifunc import run
