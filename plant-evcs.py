@@ -93,14 +93,16 @@ def main(freqs, selection=None):
         total = format(len(freqs))
         last_evc = None
         for [i, plant] in enumerate(freqs):
-            now = monotonic()
-            if now >= deadline:
-                if midline:
-                    print(end="\r", file=stderr)
-                msg = "Record {:{}}/{}".format(i + 1, len(total), total)
-                print(end=msg, file=stderr)
-                midline = True
-                deadline = now + 0.1
+            if stderr:
+                now = monotonic()
+                if now >= deadline:
+                    if midline:
+                        stderr.write("\r")
+                    msg = "Record {:{}}/{}".format(i + 1, len(total), total)
+                    stderr.write(msg)
+                    stderr.flush()
+                    midline = True
+                    deadline = now + 0.1
             
             if plant["EVC"] != last_evc:
                 last_evc = plant["EVC"]
@@ -129,8 +131,9 @@ def main(freqs, selection=None):
                 print(msg.format_map(plant), file=stderr)
             plant_freqs[name] = plant_freqs.get(name, 0) + plant["Frequency"]
     
-    if midline:
-        print(end="\x1B[1K\r", file=stderr)
+    if stderr and midline:
+        stderr.write("\x1B[1K\r")
+        stderr.flush()
     
     heading = "{:>4.4} {:67.67}{:>5.5}"
     print(heading.format("EVC", "EVC_DESC", "max(Frequency)"))
