@@ -140,7 +140,7 @@ def main(freqs, selection=None):
     for [evc, _, _] in evcs:
         print(end=format(evc, "6"))
     print()
-    for plant in sorted(selected):
+    for plant in sorted(selected, key=db.plant_key):
         print(end=plant[:32].ljust(32))
         for [[_, _, freqs], max_freq] in zip(evcs, max_freqs):
             freq = freqs.get(plant)
