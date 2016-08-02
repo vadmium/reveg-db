@@ -3,8 +3,10 @@
 from excel import FreqExcelReader
 from contextlib import closing
 import db
-from sys import stderr
+from sys import stderr, stdout
 from time import monotonic
+import csv
+from io import TextIOWrapper
 
 def lookup_tree(root, key):
     for [i, subkey] in enumerate(key):
@@ -194,41 +196,44 @@ def main(freqs, selection=None, *, synonyms=None):
         stderr.write("\x1B[1K\r")
         stderr.flush()
     
-    heading = "{:>4.4} {:67.67}{:>5.5}"
-    print(heading.format("EVC", "EVC_DESC", "max(Frequency)"))
-    for [[evc, desc, _], max_freq] in zip(evcs, max_freqs):
-        print("{:4} {:67.67}{:5}".format(evc, desc, max_freq))
-    print(end="NAME"[:32].ljust(32))
-    for [evc, _, _] in evcs:
-        print(end=format(evc, "6"))
-    print()
-    for plant in sorted(selected, key=db.plant_key):
-        print(end=plant[:32].ljust(32))
-        for [[_, _, freqs], max_freq] in zip(evcs, max_freqs):
-            freq = freqs.get(plant)
-            if freq is None:
-                print(end=" " * 6)
-                continue
-            found = True
-            print(end=format(freq / max_freq, "6.3f"))
-        print()
+    out = TextIOWrapper(stdout.buffer, stdout.encoding, stdout.errors,
+        newline="", line_buffering=stdout.line_buffering)
+    try:
+        writer = csv.writer(out)
+        writer.writerow(("EVC", "EVC_DESC", "max(Frequency)"))
+        for [[evc, desc, _], max_freq] in zip(evcs, max_freqs):
+            writer.writerow((evc, desc, max_freq))
         
-        if selection:
-            # Prune any non-branching paths leading to this entry
-            key = list(n[0] for n in db.plant_key(plant))
-            if not key[-1]:
-                key.pop()
-            node = tree
-            for subkey in key:
-                if len(node) > 1:
-                    branch_node = node
-                    branch_name = subkey
-                try:
-                    node = node[subkey]
-                except LookupError:
-                    break
-            if not node:
-                del branch_node[branch_name]
+        writer.writerow(("NAME",) + tuple(evc for [evc, _, _] in evcs))
+        for plant in sorted(selected, key=db.plant_key):
+            row = [plant]
+            for [[_, _, freqs], max_freq] in zip(evcs, max_freqs):
+                freq = freqs.get(plant)
+                if freq is None:
+                    row.append(None)
+                    continue
+                found = True
+                row.append(format(freq / max_freq, ".2f"))
+            writer.writerow(row)
+            
+            if selection:
+                # Prune any non-branching paths leading to this entry
+                key = list(n[0] for n in db.plant_key(plant))
+                if not key[-1]:
+                    key.pop()
+                node = tree
+                for subkey in key:
+                    if len(node) > 1:
+                        branch_node = node
+                        branch_name = subkey
+                    try:
+                        node = node[subkey]
+                    except LookupError:
+                        break
+                if not node:
+                    del branch_node[branch_name]
+    finally:
+        out.detach()
     
     if selection:
         for path in walk_tree(tree):
