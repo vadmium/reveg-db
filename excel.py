@@ -5,7 +5,7 @@ from numbers import Number
 from contextlib import closing
 from db import FREQS_EMPTIES, freq_ints
 from sys import stderr
-from collections import Sequence
+from collections.abc import Sequence
 
 def CplExcelReader(file):
     HEADING_FIELDS = {
